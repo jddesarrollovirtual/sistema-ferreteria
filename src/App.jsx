@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Dashboard from './components/Dashboard';
 import POS from './components/POS';
+import Products from './components/Products';
 import Inventory from './components/Inventory';
 import SuppliersCategories from './components/SuppliersCategories';
 import SalesHistory from './components/SalesHistory';
@@ -46,6 +47,8 @@ export default function App() {
         return <Dashboard setActiveTab={setActiveTab} />;
       case 'pos':
         return <POS searchQuery={searchQuery} setSearchQuery={setSearchQuery} addNotification={addNotification} />;
+      case 'products':
+        return <Products searchQuery={searchQuery} setSearchQuery={setSearchQuery} addNotification={addNotification} />;
       case 'inventory':
         return <Inventory searchQuery={searchQuery} setSearchQuery={setSearchQuery} addNotification={addNotification} />;
       case 'suppliers':
@@ -63,6 +66,8 @@ export default function App() {
         return 'Panel de Control';
       case 'pos':
         return 'Punto de Venta (POS)';
+      case 'products':
+        return 'Productos';
       case 'inventory':
         return 'Inventario';
       case 'suppliers':
@@ -80,6 +85,8 @@ export default function App() {
         return 'Resumen general del estado de la ferretería';
       case 'pos':
         return 'Registre ventas y emita comprobantes en tiempo real';
+      case 'products':
+        return 'Gestiona el catálogo completo de productos de tu ferretería';
       case 'inventory':
         return 'Gestión completa de stock, precios y códigos de barras';
       case 'suppliers':
@@ -108,7 +115,7 @@ export default function App() {
             </svg>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span className="brand-name" style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.3px', lineHeight: 1.15 }}>FerreSantiago</span>
+            <span className="brand-name" style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.3px', lineHeight: 1.15 }}>FerrePro ERP</span>
             <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '0.5px' }}>Sistema de Ferretería</span>
           </div>
         </div>
@@ -127,21 +134,33 @@ export default function App() {
             </button>
           </li>
           <li className="nav-item">
-            <button className={`nav-button ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')} style={{ padding: '0.65rem 0.8rem' }}>
+            <button className={`nav-button ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')} style={{ padding: '0.65rem 0.8rem' }}>
               <Package size={17} />
-              <span>Inventario</span>
-            </button>
-          </li>
-          <li className="nav-item">
-            <button className="nav-button" onClick={() => { setActiveTab('inventory'); addNotification('Redirigido a Inventario (Productos)', 'success'); }} style={{ padding: '0.65rem 0.8rem' }}>
-              <BoxIcon size={17} />
               <span>Productos</span>
             </button>
           </li>
           <li className="nav-item">
-            <button className="nav-button" onClick={() => { setActiveTab('suppliers'); addNotification('Redirigido a Proveedores y Categorías', 'success'); }} style={{ padding: '0.65rem 0.8rem' }}>
-              <Tags size={17} />
-              <span>Categorías</span>
+            <button className={`nav-button ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')} style={{ padding: '0.65rem 0.8rem' }}>
+              <BoxIcon size={17} />
+              <span>Inventario</span>
+            </button>
+          </li>
+          <li className="nav-item">
+            <button className="nav-button" onClick={() => addNotification('Módulo de Compras en desarrollo.', 'warning')} style={{ padding: '0.65rem 0.8rem' }}>
+              <ShoppingCart size={17} style={{ opacity: 0.6 }} />
+              <span>Compras</span>
+            </button>
+          </li>
+          <li className="nav-item">
+            <button className="nav-button" onClick={() => addNotification('Módulo de Ventas en desarrollo.', 'warning')} style={{ padding: '0.65rem 0.8rem' }}>
+              <BarChart3 size={17} style={{ opacity: 0.6 }} />
+              <span>Ventas</span>
+            </button>
+          </li>
+          <li className="nav-item">
+            <button className="nav-button" onClick={() => addNotification('Módulo de Transferencias en desarrollo.', 'warning')} style={{ padding: '0.65rem 0.8rem' }}>
+              <History size={17} style={{ opacity: 0.6 }} />
+              <span>Transferencias</span>
             </button>
           </li>
           <li className="nav-item">
@@ -157,15 +176,27 @@ export default function App() {
             </button>
           </li>
           <li className="nav-item">
-            <button className={`nav-button ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')} style={{ padding: '0.65rem 0.8rem' }}>
-              <History size={17} />
-              <span>Historial de Ventas</span>
-            </button>
-          </li>
-          <li className="nav-item">
             <button className="nav-button" onClick={() => addNotification('Módulo de Reportes en desarrollo.', 'warning')} style={{ padding: '0.65rem 0.8rem' }}>
               <BarChart3 size={17} />
               <span>Reportes</span>
+            </button>
+          </li>
+          <li className="nav-item">
+            <button className="nav-button" onClick={() => addNotification('Módulo de Caja en desarrollo.', 'warning')} style={{ padding: '0.65rem 0.8rem' }}>
+              <DollarSign size={17} />
+              <span>Caja</span>
+            </button>
+          </li>
+          <li className="nav-item">
+            <button className="nav-button" onClick={() => addNotification('Módulo de Sucursales en desarrollo.', 'warning')} style={{ padding: '0.65rem 0.8rem' }}>
+              <BoxIcon size={17} style={{ opacity: 0.7 }} />
+              <span>Sucursales</span>
+            </button>
+          </li>
+          <li className="nav-item">
+            <button className="nav-button" onClick={() => addNotification('Módulo de Usuarios en desarrollo.', 'warning')} style={{ padding: '0.65rem 0.8rem' }}>
+              <Users size={17} style={{ opacity: 0.7 }} />
+              <span>Usuarios</span>
             </button>
           </li>
           <li className="nav-item">
@@ -277,26 +308,83 @@ export default function App() {
                 </button>
               </div>
             )}
+            {activeTab === 'products' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', width: '100%' }}>
+                <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', flexGrow: 1 }}>
+                  <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input 
+                    id="global-search-input"
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Buscar productos por código, nombre, marca..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{ 
+                      paddingLeft: '2.1rem', 
+                      paddingRight: '3.2rem',
+                      height: '34px', 
+                      fontSize: '0.78rem',
+                      background: 'rgba(255,255,255,0.02)',
+                      borderColor: 'rgba(255,255,255,0.04)',
+                      borderRadius: '8px'
+                    }} 
+                  />
+                  <span style={{ 
+                    position: 'absolute', 
+                    right: '10px', 
+                    top: '50%', 
+                    transform: 'translateY(-50%)', 
+                    fontSize: '0.65rem', 
+                    color: 'var(--text-muted)',
+                    background: 'rgba(255,255,255,0.04)',
+                    padding: '0.1rem 0.35rem',
+                    borderRadius: '4px',
+                    fontFamily: 'monospace'
+                  }}>Ctrl + K</span>
+                </form>
+              </div>
+            )}
           </div>
           
           {/* Header Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.45rem', 
-              background: 'rgba(255,255,255,0.02)', 
-              border: '1px solid rgba(255,255,255,0.04)',
-              padding: '0.4rem 0.75rem',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer'
-            }}>
-              <Calendar size={13} />
-              <span>27 Jun 2026</span>
-              <ChevronDown size={11} />
-            </div>
+            {activeTab === 'products' ? (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.45rem', 
+                background: 'rgba(255,255,255,0.02)', 
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '8px',
+                fontSize: '0.78rem',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer'
+              }}
+              onClick={() => addNotification('Sucursal Principal activa.', 'primary')}
+              >
+                <BoxIcon size={13} style={{ color: '#a855f7' }} />
+                <span>Sucursal Principal</span>
+                <ChevronDown size={11} />
+              </div>
+            ) : (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.45rem', 
+                background: 'rgba(255,255,255,0.02)', 
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '0.4rem 0.75rem',
+                borderRadius: '8px',
+                fontSize: '0.78rem',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer'
+              }}>
+                <Calendar size={13} />
+                <span>27 Jun 2026</span>
+                <ChevronDown size={11} />
+              </div>
+            )}
             
             <div style={{ position: 'relative', cursor: 'pointer' }}>
               <div style={{ 
@@ -325,7 +413,29 @@ export default function App() {
               }}>3</span>
             </div>
             
-            {activeTab === 'inventory' ? (
+            {activeTab === 'products' && (
+              <button 
+                type="button"
+                className="btn btn-primary"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-add-product-modal'))}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.4rem', 
+                  padding: '0.45rem 0.85rem', 
+                  fontSize: '0.78rem', 
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)',
+                  border: 'none',
+                  boxShadow: '0 4px 10px rgba(168, 85, 247, 0.2)'
+                }}
+              >
+                <Plus size={14} />
+                <span>Nuevo Producto</span>
+              </button>
+            )}
+
+            {activeTab === 'inventory' && (
               <button 
                 type="button"
                 className="btn btn-primary"
@@ -345,7 +455,9 @@ export default function App() {
                 <Plus size={14} />
                 <span>Agregar Producto</span>
               </button>
-            ) : (
+            )}
+
+            {activeTab !== 'products' && activeTab !== 'inventory' && (
               <button 
                 type="button"
                 className="btn btn-primary"
