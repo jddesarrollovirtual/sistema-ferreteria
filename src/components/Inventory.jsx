@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Plus, Edit2, Trash2, Search, Filter, AlertTriangle, AlertCircle, PackageCheck } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Filter, AlertTriangle, AlertCircle, PackageCheck, Upload } from 'lucide-react';
 import { getProductImage } from './POS';
 
 export default function Inventory({ addNotification }) {
@@ -129,6 +129,60 @@ export default function Inventory({ addNotification }) {
     setFormStock(product.stock ? String(product.stock) : '0');
     setFormMinStock(product.min_stock ? String(product.min_stock) : '5');
     setModalOpen(true);
+  };
+
+  // Canvas utility to resize and compress desktop uploaded image files to ~15KB
+  const compressImage = (file, callback) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 300;
+        const MAX_HEIGHT = 300;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        callback(dataUrl);
+      };
+    };
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      addNotification('Por favor seleccione un archivo de imagen válido.', 'warning');
+      return;
+    }
+
+    setLoading(true);
+    compressImage(file, (base64Url) => {
+      setFormImageUrl(base64Url);
+      setLoading(false);
+      addNotification('Imagen local cargada y optimizada.', 'success');
+    });
   };
 
   const handleSaveProduct = async (e) => {
@@ -506,15 +560,58 @@ export default function Inventory({ addNotification }) {
                 />
               </div>
 
+              {/* Image upload and preview container */}
               <div className="form-group">
-                <label className="form-label">URL de la Imagen (Opcional)</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="Ej. https://imagenes.com/mi-martillo.jpg" 
-                  value={formImageUrl} 
-                  onChange={(e) => setFormImageUrl(e.target.value)} 
-                />
+                <label className="form-label">Imagen del Producto (URL o desde PC)</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {formImageUrl && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <img 
+                        src={formImageUrl} 
+                        alt="Preview" 
+                        style={{ width: '42px', height: '42px', borderRadius: '6px', objectFit: 'cover', background: 'rgba(0,0,0,0.2)' }} 
+                      />
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexGrow: 1 }}>
+                        {formImageUrl.startsWith('data:') ? 'Imagen cargada desde PC (Guardado Local)' : 'Imagen vinculada por enlace web (URL)'}
+                      </span>
+                      <button 
+                        type="button" 
+                        className="btn btn-secondary" 
+                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.68rem', color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                        onClick={() => setFormImageUrl('')}
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  )}
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <div>
+                      <label 
+                        className="btn btn-secondary" 
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem', padding: '0.7rem 0.85rem', cursor: 'pointer', borderRadius: '10px', fontSize: '0.8rem', width: '100%', border: '1px dashed rgba(255,255,255,0.15)' }}
+                      >
+                        <Upload size={14} /> Subir desde PC
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          style={{ display: 'none' }} 
+                          onChange={handleFileChange} 
+                        />
+                      </label>
+                    </div>
+                    <div>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="O pega link web (URL)..." 
+                        value={formImageUrl.startsWith('data:') ? '' : formImageUrl} 
+                        onChange={(e) => setFormImageUrl(e.target.value)}
+                        style={{ padding: '0.7rem 0.85rem', fontSize: '0.8rem' }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="grid-2">
