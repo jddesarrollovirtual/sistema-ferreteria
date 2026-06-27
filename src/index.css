@@ -229,7 +229,7 @@ body {
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
   min-width: 0;
 }
 
