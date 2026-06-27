@@ -203,8 +203,8 @@ export default function Dashboard({ setActiveTab }) {
       )}
 
       {/* Greeting Header & Goal Tracker Banner */}
-      <div className="glass-panel" style={{ padding: '1.5rem 2rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%)', border: '1px solid rgba(99, 102, 241, 0.15)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
+      <div className="glass-panel" style={{ padding: '1rem 1.5rem', marginBottom: '1.15rem', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%)', border: '1px solid rgba(99, 102, 241, 0.15)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
           {/* Welcome & Clock */}
           <div>
             <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -412,7 +412,7 @@ export default function Dashboard({ setActiveTab }) {
                           {/* Pulse Warning Indicator */}
                           <div className={`pulse-dot ${isZero ? 'pulse-red' : 'pulse-orange'}`} />
                           
-                          <span style={{ fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%', fontSize: '0.85rem' }}>
+                          <span style={{ fontWeight: 750, color: '#fff', fontSize: '0.85rem', flexGrow: 1, minWidth: 0 }}>
                             {prod.name}
                           </span>
                           
@@ -473,7 +473,7 @@ export default function Dashboard({ setActiveTab }) {
                         <div className={`rank-badge ${rankClass}`}>{idx + 1}</div>
                         
                         <div style={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                          <p style={{ fontWeight: 750, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.85rem', margin: 0 }}>
+                          <p style={{ fontWeight: 750, color: '#fff', fontSize: '0.85rem', margin: 0, width: '100%' }}>
                             {p.name}
                           </p>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>

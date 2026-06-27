@@ -226,7 +226,7 @@ body {
 .main-content {
   flex-grow: 1;
   height: 100vh;
-  padding: 2rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -256,7 +256,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1rem;
   flex-shrink: 0;
 }
 
@@ -279,8 +279,8 @@ body {
 .glass-panel {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 20px;
-  padding: 1.75rem;
+  border-radius: 16px;
+  padding: 1.15rem;
   backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--shadow-md);
   transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
@@ -353,12 +353,11 @@ body {
   box-shadow: 0 4px 20px rgba(239, 68, 68, 0.45);
 }
 
-/* Dashboard Stats Cards Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1.75rem;
+  gap: 1rem;
+  margin-bottom: 1.15rem;
   flex-shrink: 0;
 }
 
@@ -369,9 +368,9 @@ body {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 1.25rem;
-  padding: 1.5rem;
-  border-radius: 18px;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: 14px;
 }
 
 .stat-card:hover {
@@ -380,9 +379,9 @@ body {
 }
 
 .stat-icon-wrapper {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -447,7 +446,7 @@ body {
 }
 
 .custom-table th {
-  padding: 1.1rem 1.25rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-secondary);
   font-weight: 700;
@@ -461,7 +460,7 @@ body {
 }
 
 .custom-table td {
-  padding: 1.1rem 1.25rem;
+  padding: 0.7rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.02);
   color: var(--text-primary);
   font-size: 0.9rem;
@@ -860,7 +859,7 @@ body {
 .dashboard-layout {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 1.75rem;
+  gap: 1.15rem;
   flex-grow: 1;
   overflow: hidden;
   min-height: 0;
@@ -869,7 +868,7 @@ body {
 .dashboard-left, .dashboard-right {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: 1.15rem;
   height: 100%;
   overflow: hidden;
   min-height: 0;
