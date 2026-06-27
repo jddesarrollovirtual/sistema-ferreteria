@@ -234,7 +234,6 @@ body {
 }
 
 /* Page base layouts */
-.dashboard-container,
 .inventory-page,
 .pos-page,
 .sales-history-page,
@@ -244,6 +243,13 @@ body {
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-container {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1003,28 +1009,17 @@ body {
   gap: 1.25rem;
 }
 
-/* Dashboard Grid Layout (Prevents vertical overflow) */
+/* Dashboard Grid Layout */
 .dashboard-layout {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 1.15rem;
-  flex-grow: 1;
-  overflow: hidden;
-  min-height: 0;
 }
 
 .dashboard-left, .dashboard-right {
   display: flex;
   flex-direction: column;
   gap: 1.15rem;
-  height: 100%;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.dashboard-left .glass-panel, .dashboard-right .glass-panel {
-  flex-grow: 1;
-  min-height: 0;
 }
 
 /* Search bar filter styling for Tables */
@@ -1128,19 +1123,17 @@ body {
 
 /* Helper classes to handle desktop flexbox vs responsive natural flows */
 .dashboard-right-panel {
-  height: 100%;
+  height: auto;
 }
 .dashboard-right-section {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  flex-grow: 1;
+  gap: 0.5rem;
 }
 .dashboard-right-scrollable {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  overflow-y: auto;
   padding-right: 0.15rem;
 }
 
