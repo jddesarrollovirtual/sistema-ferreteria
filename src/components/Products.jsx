@@ -462,10 +462,10 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
   };
 
   return (
-    <div className="inventory-page" style={{ display: 'flex', width: '100%', minHeight: 0, overflow: 'hidden' }}>
+    <div className="products-layout-wrapper">
       
       {/* Left panel: Catalog List and stats */}
-      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingRight: selectedProduct ? '0.75rem' : '0' }}>
+      <div className="products-left-panel" style={{ paddingRight: selectedProduct ? '0.75rem' : '0' }}>
         
         {/* Title */}
         <div style={{ marginBottom: '1.25rem' }}>
@@ -870,22 +870,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
 
       {/* Right Drawer Panel: Details view */}
       {selectedProduct && (
-        <div 
-          className="glass-panel" 
-          style={{ 
-            width: '380px', 
-            marginLeft: '0.85rem', 
-            background: 'var(--bg-surface-solid)', 
-            borderLeft: '1px solid var(--border-color)', 
-            padding: '1.25rem', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '1rem',
-            flexShrink: 0,
-            overflowY: 'auto',
-            animation: 'fadeIn 0.2s ease'
-          }}
-        >
+        <div className="products-details-drawer">
           {/* Drawer Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
             <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Detalles del Producto</span>
