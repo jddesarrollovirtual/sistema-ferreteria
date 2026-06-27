@@ -575,7 +575,7 @@ export default function POS({ addNotification }) {
                     src={product.image_url || getProductImage(product.name)} 
                     alt={product.name} 
                     style={{ 
-                      width: '85px', 
+                      width: '78px', 
                       height: '100%', 
                       objectFit: 'cover',
                       background: 'rgba(0,0,0,0.2)',
@@ -583,7 +583,7 @@ export default function POS({ addNotification }) {
                       flexShrink: 0
                     }} 
                   />
-                  <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%', justifyContent: 'space-between', padding: '0.55rem 0.75rem', minWidth: 0 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%', justifyContent: 'space-between', padding: '0.5rem 0.65rem', minWidth: 0 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.05rem', minWidth: 0 }}>
                       <span 
                         style={{ fontSize: '0.6rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}
@@ -604,7 +604,7 @@ export default function POS({ addNotification }) {
                       </span>
                       <span 
                         className={`badge ${isOut ? 'badge-danger' : isLow ? 'badge-warning' : 'badge-success'}`}
-                        style={{ padding: '0.15rem 0.4rem', fontSize: '0.62rem' }}
+                        style={{ padding: '0.15rem 0.4rem', fontSize: '0.62rem', whiteSpace: 'nowrap' }}
                       >
                         {isOut ? 'Agotado' : `Stock: ${remainingStock}`}
                       </span>

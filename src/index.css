@@ -566,7 +566,7 @@ body {
 
 .pos-products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1rem;
   overflow-y: auto;
   padding-right: 0.25rem;
@@ -645,6 +645,7 @@ body {
   font-weight: 800;
   color: #34d399;
   text-shadow: 0 0 10px rgba(52, 211, 153, 0.15);
+  white-space: nowrap;
 }
 
 .pos-product-stock {
