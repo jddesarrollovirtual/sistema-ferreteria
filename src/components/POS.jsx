@@ -143,9 +143,22 @@ export default function POS({ addNotification }) {
     focusSearch();
   }, []);
 
-  // Keyboard Shortcuts Hook
+  // Keyboard Shortcuts & USB Scanner Auto-Redirect Hook
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Auto-focus redirection: If active element is not another form input/textarea,
+      // and user types alphanumeric key (like a scanner does), redirect focus to the barcode search input.
+      const activeEl = document.activeElement;
+      const isTypingElsewhere = activeEl && 
+        (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') && 
+        activeEl !== barcodeInputRef.current;
+      
+      if (!isTypingElsewhere && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (barcodeInputRef.current && document.activeElement !== barcodeInputRef.current) {
+          barcodeInputRef.current.focus();
+        }
+      }
+
       // F2: Focus Search
       if (e.key === 'F2') {
         e.preventDefault();
