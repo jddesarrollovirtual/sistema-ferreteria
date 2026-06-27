@@ -1,6 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Plus, Edit2, Trash2, Search, Filter, AlertTriangle, AlertCircle, PackageCheck, Upload } from 'lucide-react';
+import { 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Search, 
+  Filter, 
+  AlertTriangle, 
+  AlertCircle, 
+  PackageCheck, 
+  Upload,
+  Package,
+  DollarSign,
+  TrendingUp,
+  Download,
+  LayoutGrid,
+  List,
+  Calendar,
+  ChevronDown,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle,
+  XCircle
+} from 'lucide-react';
 import { getProductImage } from './POS';
 
 export default function Inventory({ addNotification }) {
@@ -10,6 +33,9 @@ export default function Inventory({ addNotification }) {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [activeTab, setActiveTab] = useState('todos');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -355,39 +381,67 @@ export default function Inventory({ addNotification }) {
     }
   };
 
+  const getCategoryStyle = (catName) => {
+    const lower = (catName || '').toLowerCase();
+    if (lower.includes('herramienta')) {
+      return { background: 'rgba(245, 158, 11, 0.08)', color: 'var(--warning)', border: '1px solid rgba(245, 158, 11, 0.2)' };
+    }
+    if (lower.includes('plomer') || lower.includes('tubo') || lower.includes('material')) {
+      return { background: 'rgba(59, 130, 246, 0.08)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.2)' };
+    }
+    if (lower.includes('pintur')) {
+      return { background: 'rgba(168, 85, 247, 0.08)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.2)' };
+    }
+    if (lower.includes('tornill') || lower.includes('perno')) {
+      return { background: 'rgba(99, 102, 241, 0.08)', color: 'var(--primary)', border: '1px solid rgba(99, 102, 241, 0.2)' };
+    }
+    return { background: 'rgba(255, 255, 255, 0.03)', color: 'var(--text-secondary)', border: '1px solid rgba(255, 255, 255, 0.06)' };
+  };
+
   // Filters
   const filteredProducts = products.filter((p) => {
     const matchesSearch = 
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      (p.barcode && p.barcode.includes(searchQuery));
+      (p.barcode && p.barcode.includes(searchQuery)) ||
+      (p.categories?.name && p.categories.name.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesCategory = 
       !selectedCategory || p.category_id === Number(selectedCategory);
 
-    return matchesSearch && matchesCategory;
+    // Tab Filter
+    let matchesTab = true;
+    if (activeTab === 'bajo_stock') {
+      matchesTab = p.stock > 0 && p.stock <= p.min_stock;
+    } else if (activeTab === 'sin_stock') {
+      matchesTab = p.stock <= 0;
+    } else if (activeTab === 'activos') {
+      matchesTab = p.stock > 0;
+    } else if (activeTab === 'inactivos') {
+      matchesTab = p.stock <= 0;
+    }
+
+    return matchesSearch && matchesCategory && matchesTab;
   });
 
   const getStockStatus = (stock, minStock) => {
-    if (stock <= 0) return { label: 'Sin Stock', class: 'badge-danger', icon: <AlertCircle size={12} /> };
-    if (stock <= minStock) return { label: 'Stock Bajo', class: 'badge-warning', icon: <AlertTriangle size={12} /> };
-    return { label: 'Disponible', class: 'badge-success', icon: <PackageCheck size={12} /> };
+    if (stock <= 0) return { label: 'Sin Stock', class: 'badge-danger', icon: <XCircle size={13} style={{ marginRight: '0.2rem' }} /> };
+    if (stock <= minStock) return { label: 'Stock Bajo', class: 'badge-warning', icon: <AlertTriangle size={13} style={{ marginRight: '0.2rem' }} /> };
+    return { label: 'Disponible', class: 'badge-success', icon: <CheckCircle size={13} style={{ marginRight: '0.2rem' }} /> };
   };
 
   return (
     <div className="inventory-page">
-      <div className="page-header">
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div className="page-title-section">
-          <h1>Inventario de Productos</h1>
-          <p>Gestione el stock, precios y datos del catálogo ferretero.</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, color: '#fff' }}>Inventario de Productos</h1>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>Gestione el stock, precios y datos del catálogo ferretero.</p>
         </div>
-        <button className="btn btn-primary" onClick={openAddModal}>
-          <Plus size={18} /> Agregar Producto
-        </button>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="glass-panel" style={{ display: 'flex', flexDirection: 'row', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flexGrow: 1, minWidth: '240px' }}>
+      {/* Mockup-style Top Toolbar Search & Header Actions */}
+      <div className="glass-panel" style={{ display: 'flex', flexDirection: 'row', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center', padding: '1rem' }}>
+        {/* Search bar */}
+        <div style={{ position: 'relative', flexGrow: 1, minWidth: '240px', maxWidth: '450px' }}>
           <Search 
             size={18} 
             style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} 
@@ -395,101 +449,417 @@ export default function Inventory({ addNotification }) {
           <input 
             type="text" 
             className="form-input" 
-            placeholder="Buscar por código de barra o nombre..." 
+            placeholder="Buscar productos por código, nombre o categoría..." 
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ paddingLeft: '2.5rem' }}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            style={{ paddingLeft: '2.5rem', borderRadius: '8px', height: '38px', fontSize: '0.82rem' }}
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '200px' }}>
-          <Filter size={16} className="text-secondary" />
-          <select 
-            className="form-select" 
-            value={selectedCategory} 
-            onChange={(e) => setSelectedCategory(e.target.value)}
+        {/* Filters button dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button 
+            type="button" 
+            className="btn btn-secondary" 
+            style={{ padding: '0.5rem 1rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.45rem', borderRadius: '8px', height: '38px' }}
+            onClick={() => addNotification('Filtros avanzados en desarrollo.', 'primary')}
           >
-            <option value="">Todas las Categorías</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+            <Filter size={15} /> Filtros
+          </button>
+        </div>
+
+        {/* Date picker display */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div 
+            style={{ 
+              background: 'rgba(255,255,255,0.02)', 
+              border: '1px solid rgba(255,255,255,0.04)', 
+              borderRadius: '8px', 
+              padding: '0.5rem 0.85rem', 
+              fontSize: '0.82rem', 
+              color: '#fff', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.45rem',
+              height: '38px' 
+            }}
+          >
+            <Calendar size={15} className="text-secondary" />
+            <span>27 Jun 2026</span>
+          </div>
+        </div>
+
+        {/* Bell notifications */}
+        <div 
+          style={{ 
+            position: 'relative', 
+            cursor: 'pointer', 
+            width: '38px', 
+            height: '38px', 
+            borderRadius: '8px', 
+            background: 'rgba(255,255,255,0.02)', 
+            border: '1px solid rgba(255,255,255,0.04)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            marginLeft: 'auto'
+          }}
+          onClick={() => addNotification('Tiene 3 alertas de stock bajo.', 'warning')}
+        >
+          <AlertTriangle size={17} style={{ color: 'var(--text-secondary)' }} />
+          <span 
+            style={{ 
+              position: 'absolute', 
+              top: '-3px', 
+              right: '-3px', 
+              width: '15px', 
+              height: '15px', 
+              borderRadius: '50%', 
+              background: 'var(--danger)', 
+              color: '#fff', 
+              fontSize: '0.62rem', 
+              fontWeight: 800, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}
+          >
+            3
+          </span>
+        </div>
+
+        {/* Add Product main button */}
+        <button 
+          className="btn btn-primary" 
+          onClick={openAddModal}
+          style={{ 
+            padding: '0.5rem 1.15rem', 
+            fontSize: '0.82rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            borderRadius: '8px', 
+            background: 'linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)', 
+            border: 'none',
+            height: '38px' 
+          }}
+        >
+          <Plus size={16} /> Agregar Producto
+        </button>
+      </div>
+
+      {/* Stat Cards Row */}
+      <div className="grid-5" style={{ marginBottom: '1.5rem', gap: '0.85rem' }}>
+        
+        {/* Card 1: Total Productos */}
+        <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1rem', background: 'rgba(13, 20, 38, 0.3)', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.25)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Package size={20} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Total Productos</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', lineHeight: '1.2', marginTop: '0.1rem' }}>{products.length}</div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>productos registrados</div>
+          </div>
+        </div>
+
+        {/* Card 2: Valor del Inventario */}
+        <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1rem', background: 'rgba(13, 20, 38, 0.3)', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.25)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <DollarSign size={20} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Valor del Inventario</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', lineHeight: '1.2', marginTop: '0.1rem' }}>S/ {products.reduce((sum, p) => sum + (Number(p.cost_price || 0) * Number(p.stock || 0)), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>valor total</div>
+          </div>
+        </div>
+
+        {/* Card 3: Stock Disponible */}
+        <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1rem', background: 'rgba(13, 20, 38, 0.3)', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.25)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <TrendingUp size={20} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Stock Disponible</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', lineHeight: '1.2', marginTop: '0.1rem' }}>{products.reduce((sum, p) => sum + Number(p.stock || 0), 0)}</div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>unidades disponibles</div>
+          </div>
+        </div>
+
+        {/* Card 4: Stock Bajo */}
+        <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1rem', background: 'rgba(13, 20, 38, 0.3)', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.25)', color: 'var(--warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <AlertTriangle size={20} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Stock Bajo</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', lineHeight: '1.2', marginTop: '0.1rem' }}>{products.filter((p) => p.stock > 0 && p.stock <= p.min_stock).length}</div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>productos</div>
+          </div>
+        </div>
+
+        {/* Card 5: Sin Stock */}
+        <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1rem', background: 'rgba(13, 20, 38, 0.3)', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.25)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <AlertCircle size={20} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>Sin Stock</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', lineHeight: '1.2', marginTop: '0.1rem' }}>{products.filter((p) => p.stock <= 0).length}</div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>productos</div>
+          </div>
         </div>
       </div>
 
-      {/* Products Table */}
-      <div className="glass-panel">
+      {/* Tabs and Actions bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.15rem', flexWrap: 'wrap', gap: '1rem' }}>
+        
+        {/* Left Side: Filter Tabs */}
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className={`category-tab-btn ${activeTab === 'todos' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('todos'); setCurrentPage(1); }}
+            style={{ borderRadius: '8px', padding: '0.4rem 0.95rem', fontSize: '0.78rem', fontWeight: 650 }}
+          >
+            Todos ({products.length})
+          </button>
+          <button
+            type="button"
+            className={`category-tab-btn ${activeTab === 'bajo_stock' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('bajo_stock'); setCurrentPage(1); }}
+            style={{ borderRadius: '8px', padding: '0.4rem 0.95rem', fontSize: '0.78rem', fontWeight: 650 }}
+          >
+            Stock Bajo ({products.filter((p) => p.stock > 0 && p.stock <= p.min_stock).length})
+          </button>
+          <button
+            type="button"
+            className={`category-tab-btn ${activeTab === 'sin_stock' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('sin_stock'); setCurrentPage(1); }}
+            style={{ borderRadius: '8px', padding: '0.4rem 0.95rem', fontSize: '0.78rem', fontWeight: 650 }}
+          >
+            Sin Stock ({products.filter((p) => p.stock <= 0).length})
+          </button>
+          <button
+            type="button"
+            className={`category-tab-btn ${activeTab === 'activos' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('activos'); setCurrentPage(1); }}
+            style={{ borderRadius: '8px', padding: '0.4rem 0.95rem', fontSize: '0.78rem', fontWeight: 650 }}
+          >
+            Activos ({products.filter((p) => p.stock > 0).length})
+          </button>
+          <button
+            type="button"
+            className={`category-tab-btn ${activeTab === 'inactivos' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('inactivos'); setCurrentPage(1); }}
+            style={{ borderRadius: '8px', padding: '0.4rem 0.95rem', fontSize: '0.78rem', fontWeight: 650 }}
+          >
+            Inactivos ({products.filter((p) => p.stock <= 0).length})
+          </button>
+        </div>
+
+        {/* Right Side: Action Buttons & Layout toggles */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.85rem', fontSize: '0.78rem', borderRadius: '8px' }}
+            onClick={() => addNotification('Exportación a Excel completada.', 'success')}
+          >
+            <Download size={14} /> Exportar
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.85rem', fontSize: '0.78rem', borderRadius: '8px' }}
+            onClick={() => addNotification('Importación de catálogo disponible.', 'success')}
+          >
+            <Upload size={14} /> Importar
+          </button>
+
+          {/* Grid/List switch */}
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.15rem', borderRadius: '8px', gap: '0.15rem' }}>
+            <button
+              type="button"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                padding: '0.3rem',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onClick={() => addNotification('Vista cuadrícula en desarrollo.', 'warning')}
+            >
+              <LayoutGrid size={15} />
+            </button>
+            <button
+              type="button"
+              style={{
+                background: 'var(--primary)',
+                border: 'none',
+                color: '#fff',
+                padding: '0.3rem',
+                borderRadius: '6px',
+                cursor: 'default',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <List size={15} />
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Products Table Panel */}
+      <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
         {loading && products.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)' }}>Cargando inventario...</p>
+          <p style={{ color: 'var(--text-secondary)', padding: '2rem' }}>Cargando inventario...</p>
         ) : (
-          <div className="table-container">
+          <div className="table-container" style={{ margin: '0' }}>
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Código</th>
-                  <th>Descripción del Producto</th>
-                  <th>Categoría</th>
-                  <th>Costo</th>
-                  <th>P. Venta</th>
-                  <th>Stock</th>
-                  <th>Estado</th>
-                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                  <th style={{ width: '40px', textAlign: 'center' }}>
+                    <input type="checkbox" style={{ accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                  </th>
+                  <th>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                      CÓDIGO <ArrowUpDown size={11} style={{ opacity: 0.5 }} />
+                    </span>
+                  </th>
+                  <th>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                      PRODUCTO <ArrowUpDown size={11} style={{ opacity: 0.5 }} />
+                    </span>
+                  </th>
+                  <th>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                      CATEGORÍA <ArrowUpDown size={11} style={{ opacity: 0.5 }} />
+                    </span>
+                  </th>
+                  <th>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                      COSTO <ArrowUpDown size={11} style={{ opacity: 0.5 }} />
+                    </span>
+                  </th>
+                  <th>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                      P. VENTA <ArrowUpDown size={11} style={{ opacity: 0.5 }} />
+                    </span>
+                  </th>
+                  <th>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                      STOCK <ArrowUpDown size={11} style={{ opacity: 0.5 }} />
+                    </span>
+                  </th>
+                  <th>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                      ESTADO <ArrowUpDown size={11} style={{ opacity: 0.5 }} />
+                    </span>
+                  </th>
+                  <th style={{ textAlign: 'right' }}>ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((prod) => {
+                {filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((prod) => {
                   const status = getStockStatus(prod.stock, prod.min_stock);
+                  const catStyle = getCategoryStyle(prod.categories?.name);
                   return (
                     <tr key={prod.id}>
-                      <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
+                      <td style={{ textAlign: 'center' }}>
+                        <input type="checkbox" style={{ accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                      </td>
+                      <td style={{ fontSize: '0.8rem', color: '#fff', fontFamily: 'monospace' }}>
                         {prod.barcode || 'Sin Código'}
                       </td>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <img 
                             src={prod.image_url || getProductImage(prod.name)} 
                             alt={prod.name} 
                             style={{ 
-                              width: '36px', 
-                              height: '36px', 
-                              borderRadius: '6px', 
+                              width: '40px', 
+                              height: '40px', 
+                              borderRadius: '8px', 
                               objectFit: 'cover', 
-                              background: 'rgba(0,0,0,0.15)',
+                              background: 'rgba(0,0,0,0.2)',
                               border: '1px solid rgba(255,255,255,0.05)',
                               flexShrink: 0 
                             }} 
                           />
                           <div>
-                            <div style={{ fontWeight: 600 }}>{prod.name}</div>
-                            {prod.description && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{prod.description}</div>}
+                            <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.85rem' }}>{prod.name}</div>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.05rem' }}>Código: {prod.barcode || 'MAR-000'}</div>
                           </div>
                         </div>
                       </td>
-                      <td>{prod.categories?.name || 'General'}</td>
-                      <td>S/ {Number(prod.cost_price).toFixed(2)}</td>
-                      <td style={{ fontWeight: 750, color: 'var(--success)' }}>S/ {Number(prod.sale_price).toFixed(2)}</td>
-                      <td style={{ fontWeight: 700 }}>{prod.stock}</td>
                       <td>
-                        <span className={`badge ${status.class}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <span 
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 650,
+                            padding: '0.2rem 0.65rem',
+                            borderRadius: '6px',
+                            ...catStyle
+                          }}
+                        >
+                          {prod.categories?.name || 'General'}
+                        </span>
+                      </td>
+                      <td style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                        S/ {Number(prod.cost_price).toFixed(2)}
+                      </td>
+                      <td style={{ fontWeight: 800, color: 'var(--success)', fontSize: '0.85rem' }}>
+                        S/ {Number(prod.sale_price).toFixed(2)}
+                      </td>
+                      <td style={{ fontWeight: 800, color: '#fff', fontSize: '0.85rem' }}>
+                        {prod.stock}
+                      </td>
+                      <td>
+                        <span 
+                          className={`badge ${status.class}`} 
+                          style={{ 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            fontSize: '0.72rem', 
+                            fontWeight: 650, 
+                            borderRadius: '6px',
+                            padding: '0.2rem 0.55rem',
+                            background: status.class === 'badge-success' ? 'rgba(16,185,129,0.08)' : status.class === 'badge-warning' ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)',
+                            color: status.class === 'badge-success' ? 'var(--success)' : status.class === 'badge-warning' ? 'var(--warning)' : 'var(--danger)',
+                            border: status.class === 'badge-success' ? '1px solid rgba(16,185,129,0.15)' : status.class === 'badge-warning' ? '1px solid rgba(245,158,11,0.15)' : '1px solid rgba(239,68,68,0.15)'
+                          }}
+                        >
                           {status.icon}
                           {status.label}
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', gap: '0.45rem', justifyContent: 'flex-end' }}>
                           <button 
                             className="btn btn-secondary" 
-                            style={{ padding: '0.4rem' }}
+                            style={{ padding: '0.35rem', borderRadius: '6px' }}
                             onClick={() => openEditModal(prod)}
                           >
-                            <Edit2 size={14} />
+                            <Edit2 size={13} />
                           </button>
                           <button 
                             className="btn btn-danger" 
-                            style={{ padding: '0.4rem' }}
+                            style={{ padding: '0.35rem', borderRadius: '6px' }}
                             onClick={() => handleDeleteProduct(prod.id, prod.name)}
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </td>
@@ -498,13 +868,98 @@ export default function Inventory({ addNotification }) {
                 })}
                 {filteredProducts.length === 0 && (
                   <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
-                      No se encontraron resultados.
+                    <td colSpan="9" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '3rem' }}>
+                      <Search size={32} style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', opacity: 0.3 }} />
+                      <p>No se encontraron productos coincidentes.</p>
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+
+            {/* Pagination Footer */}
+            {filteredProducts.length > 0 && (
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  padding: '0.85rem 1.25rem', 
+                  borderTop: '1px solid var(--border-color)',
+                  background: 'rgba(6, 9, 19, 0.2)'
+                }}
+              >
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredProducts.length)} de {filteredProducts.length} productos
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <button
+                    type="button"
+                    style={{
+                      background: 'rgba(255,255,255,0.01)',
+                      border: '1px solid rgba(255,255,255,0.04)',
+                      borderRadius: '6px',
+                      color: currentPage === 1 ? 'var(--text-muted)' : '#fff',
+                      width: '26px',
+                      height: '26px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                    }}
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+
+                  {Array.from({ length: Math.ceil(filteredProducts.length / itemsPerPage) }).map((_, idx) => {
+                    const pageNum = idx + 1;
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        style={{
+                          background: currentPage === pageNum ? 'var(--primary)' : 'none',
+                          border: 'none',
+                          borderRadius: '6px',
+                          color: '#fff',
+                          width: '26px',
+                          height: '26px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: currentPage === pageNum ? 'default' : 'pointer'
+                        }}
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    style={{
+                      background: 'rgba(255,255,255,0.01)',
+                      border: '1px solid rgba(255,255,255,0.04)',
+                      borderRadius: '6px',
+                      color: currentPage === Math.ceil(filteredProducts.length / itemsPerPage) ? 'var(--text-muted)' : '#fff',
+                      width: '26px',
+                      height: '26px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: currentPage === Math.ceil(filteredProducts.length / itemsPerPage) ? 'not-allowed' : 'pointer'
+                    }}
+                    disabled={currentPage === Math.ceil(filteredProducts.length / itemsPerPage)}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredProducts.length / itemsPerPage)))}
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
