@@ -251,7 +251,7 @@ export default function Inventory({ addNotification }) {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="glass-panel" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center' }}>
+      <div className="glass-panel" style={{ display: 'flex', flexDirection: 'row', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center' }}>
         <div style={{ position: 'relative', flexGrow: 1, minWidth: '240px' }}>
           <Search 
             size={18} 

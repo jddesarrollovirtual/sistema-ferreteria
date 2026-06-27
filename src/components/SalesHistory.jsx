@@ -109,7 +109,7 @@ export default function SalesHistory({ addNotification }) {
       </div>
 
       {/* Search Filter Bar */}
-      <div className="glass-panel" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center' }}>
+      <div className="glass-panel" style={{ display: 'flex', flexDirection: 'row', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center' }}>
         <div style={{ position: 'relative', flexGrow: 1 }}>
           <Search 
             size={18} 
