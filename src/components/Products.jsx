@@ -1606,6 +1606,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
               <head>
                 <title>Imprimir Etiquetas FerrePro ERP</title>
                 <style>
+                  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                   body { margin: 0; padding: 20px; font-family: 'Courier New', monospace; display: flex; flex-wrap: wrap; gap: 12px; background: white; color: black; }
                   .label-sticker { border: 1px dashed black; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; border-radius: 4px; box-sizing: border-box; background: white; }
                   .size-50x25 { width: 189px; height: 94px; }
