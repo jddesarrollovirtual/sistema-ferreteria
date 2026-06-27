@@ -583,7 +583,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
             className="form-select"
             value={filterCategory}
             onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
-            style={{ height: '36px', fontSize: '0.78rem', borderRadius: '8px' }}
+            style={{ height: '36px', padding: '0 0.65rem', fontSize: '0.78rem', borderRadius: '8px' }}
           >
             <option value="">Todas las categorías</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -593,7 +593,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
             className="form-select"
             value={filterBrand}
             onChange={(e) => { setFilterBrand(e.target.value); setCurrentPage(1); }}
-            style={{ height: '36px', fontSize: '0.78rem', borderRadius: '8px' }}
+            style={{ height: '36px', padding: '0 0.65rem', fontSize: '0.78rem', borderRadius: '8px' }}
           >
             <option value="">Todas las marcas</option>
             <option value="Stanley">Stanley</option>
@@ -607,7 +607,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
             className="form-select"
             value={filterStatus}
             onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-            style={{ height: '36px', fontSize: '0.78rem', borderRadius: '8px' }}
+            style={{ height: '36px', padding: '0 0.65rem', fontSize: '0.78rem', borderRadius: '8px' }}
           >
             <option value="">Todos los estados</option>
             <option value="Activo">Activo</option>
@@ -618,7 +618,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
             className="form-select"
             value={filterSupplier}
             onChange={(e) => { setFilterSupplier(e.target.value); setCurrentPage(1); }}
-            style={{ height: '36px', fontSize: '0.78rem', borderRadius: '8px' }}
+            style={{ height: '36px', padding: '0 0.65rem', fontSize: '0.78rem', borderRadius: '8px' }}
           >
             <option value="">Todos los proveedores</option>
             {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
