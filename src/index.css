@@ -222,11 +222,11 @@ body {
   color: var(--text-secondary);
 }
 
-/* Main Content Wrapper */
+/* Main Content Wrapper (Takes remaining space and fits height) */
 .main-content {
   flex-grow: 1;
   height: 100vh;
-  padding: 2.5rem;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -979,6 +979,24 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
 }
 
+/* Helper classes to handle desktop flexbox vs responsive natural flows */
+.dashboard-right-panel {
+  height: 100%;
+}
+.dashboard-right-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex-grow: 1;
+}
+.dashboard-right-scrollable {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1150px) {
   .pos-container {
@@ -995,6 +1013,19 @@ body {
   .dashboard-left, .dashboard-right {
     height: auto;
     overflow: visible;
+  }
+  
+  /* Reset height locks on smaller stacked screens */
+  .dashboard-right-panel {
+    height: auto !important;
+  }
+  .dashboard-right-section {
+    min-height: auto !important;
+    flex-grow: 0 !important;
+  }
+  .dashboard-right-scrollable {
+    overflow-y: visible !important;
+    height: auto !important;
   }
 }
 

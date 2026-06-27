@@ -381,16 +381,16 @@ export default function Dashboard({ setActiveTab }) {
 
         {/* Right Side: Stock Alerts, Top Sellers, and Quick Actions (Unified Widget Board) */}
         <div className="dashboard-right">
-          <div className="glass-panel" style={{ height: '100%', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: 'hidden' }}>
+          <div className="glass-panel dashboard-right-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: 'hidden' }}>
             
             {/* Section 1: Stock Alerts (Only visible if there are low stock products) */}
             {lowStockProducts.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flexGrow: 1, borderBottom: '1px solid var(--border-color)', paddingBottom: '1.25rem' }}>
+              <div className="dashboard-right-section" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '1.25rem' }}>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem', flexShrink: 0 }}>
                   <AlertTriangle className="text-warning" size={18} />
                   Alertas de Stock
                 </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', overflowY: 'auto', paddingRight: '0.15rem' }}>
+                <div className="dashboard-right-scrollable">
                   {lowStockProducts.map((prod) => {
                     const ratio = Math.min(100, (prod.stock / prod.min_stock) * 100);
                     const isZero = prod.stock === 0;
@@ -440,7 +440,7 @@ export default function Dashboard({ setActiveTab }) {
             )}
 
             {/* Section 2: Top Selling Products (Premium Rank Badges, expands dynamically) */}
-            <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flexGrow: 1 }}>
+            <div className="dashboard-right-section">
               <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.85rem', flexShrink: 0 }}>
                 <Award size={18} className="text-primary" /> Productos Más Vendidos
               </h3>
@@ -450,7 +450,7 @@ export default function Dashboard({ setActiveTab }) {
                   Sin ventas registradas.
                 </p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', overflowY: 'auto', paddingRight: '0.15rem' }}>
+                <div className="dashboard-right-scrollable">
                   {topProducts.map((p, idx) => {
                     const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : 'rank-3';
                     const scalePct = maxTopSales > 0 ? (p.sales / maxTopSales) * 100 : 0;
