@@ -455,8 +455,30 @@ export default function POS({ addNotification }) {
         {/* Left Side: Product catalog search and selection */}
         <div className="pos-catalog-section glass-panel" style={{ padding: '1.15rem' }}>
           
+          {/* Supabase status and header title */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', flexShrink: 0 }}>
+            <div>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 950, margin: 0, color: '#fff' }}>
+                Punto de Venta
+              </h2>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: 'rgba(255,255,255,0.03)', padding: '0.35rem 0.65rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <span style={{ 
+                width: '7px', 
+                height: '7px', 
+                borderRadius: '50%', 
+                background: dbError ? 'var(--danger)' : 'var(--success)', 
+                boxShadow: dbError ? '0 0 6px var(--danger)' : '0 0 6px var(--success)',
+                display: 'inline-block'
+              }} />
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                {dbError ? 'Modo Simulación (Local)' : 'Supabase Online'}
+              </span>
+            </div>
+          </div>
+
           {/* Header Search with Barcode Scanner Indicator */}
-          <form onSubmit={handleBarcodeSubmit} className="pos-search-bar" style={{ marginBottom: '1rem' }}>
+          <form onSubmit={handleBarcodeSubmit} className="pos-search-bar" style={{ marginBottom: '0.85rem' }}>
             <div style={{ position: 'relative', flexGrow: 1 }}>
               <Barcode 
                 size={20} 
@@ -486,28 +508,12 @@ export default function POS({ addNotification }) {
           </form>
 
           {/* Dynamic Category Tabs */}
-          <div 
-            style={{ 
-              display: 'flex', 
-              gap: '0.4rem', 
-              overflowX: 'auto', 
-              paddingBottom: '0.75rem', 
-              borderBottom: '1px solid var(--border-color)', 
-              marginBottom: '1rem',
-              flexShrink: 0
-            }}
-          >
+          <div className="category-tab-scroll">
             {categoriesList.map((cat) => (
               <button
                 key={cat}
                 type="button"
-                className={`btn ${selectedCategory === cat ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ 
-                  padding: '0.45rem 1rem', 
-                  fontSize: '0.8rem', 
-                  borderRadius: '99px',
-                  whiteSpace: 'nowrap'
-                }}
+                className={`category-tab-btn ${selectedCategory === cat ? 'active' : ''}`}
                 onClick={() => setSelectedCategory(cat)}
               >
                 {cat}
@@ -529,28 +535,29 @@ export default function POS({ addNotification }) {
                   className={`pos-product-card ${isOut ? 'out-of-stock' : ''}`}
                   onClick={() => remainingStock > 0 && addToCart(product)}
                   style={{
-                    padding: '0.9rem',
-                    height: '135px',
-                    position: 'relative',
-                    border: remainingStock > 0 ? '1px solid rgba(255,255,255,0.04)' : '1px solid var(--danger-glow)'
+                    border: isOut 
+                      ? '1px solid var(--danger-glow)' 
+                      : isLow 
+                        ? '1px solid rgba(245, 158, 11, 0.25)' 
+                        : '1px solid rgba(255,255,255,0.04)'
                   }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
                     <span 
-                      style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}
+                      style={{ fontSize: '0.68rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}
                     >
                       {product.categories?.name || 'Ferretería'}
                     </span>
-                    <div className="pos-product-name" style={{ fontSize: '0.85rem', fontWeight: 800, minHeight: '34px' }}>
+                    <div className="pos-product-name">
                       {product.name}
                     </div>
-                    <div className="pos-product-code" style={{ fontSize: '0.7rem' }}>
+                    <div className="pos-product-code">
                       {product.barcode || 'Sin Código'}
                     </div>
                   </div>
                   
-                  <div className="pos-product-price-row" style={{ marginTop: 'auto' }}>
-                    <span className="pos-product-price" style={{ fontSize: '1.05rem', fontWeight: 800 }}>
+                  <div className="pos-product-price-row">
+                    <span className="pos-product-price">
                       S/ {Number(product.sale_price).toFixed(2)}
                     </span>
                     <span 
@@ -736,51 +743,46 @@ export default function POS({ addNotification }) {
 
               <div className="form-group">
                 <label className="form-label">Método de Pago</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
-                  <button 
-                    type="button"
-                    className={`btn ${paymentMethod === 'efectivo' ? 'btn-primary' : 'btn-secondary'}`}
+                <div className="payment-method-grid">
+                  <div 
+                    className={`payment-method-card ${paymentMethod === 'efectivo' ? 'active' : ''}`}
                     onClick={() => setPaymentMethod('efectivo')}
-                    style={{ fontSize: '0.8rem', justifyContent: 'flex-start', padding: '0.65rem 0.85rem', borderRadius: '10px' }}
                   >
-                    <DollarSign size={15} /> Efectivo
-                  </button>
-                  <button 
-                    type="button"
-                    className={`btn ${paymentMethod === 'tarjeta' ? 'btn-primary' : 'btn-secondary'}`}
+                    <DollarSign size={20} className={paymentMethod === 'efectivo' ? 'text-success' : ''} />
+                    <span>Efectivo</span>
+                  </div>
+                  <div 
+                    className={`payment-method-card ${paymentMethod === 'tarjeta' ? 'active' : ''}`}
                     onClick={() => setPaymentMethod('tarjeta')}
-                    style={{ fontSize: '0.8rem', justifyContent: 'flex-start', padding: '0.65rem 0.85rem', borderRadius: '10px' }}
                   >
-                    <CreditCard size={15} /> Tarjeta
-                  </button>
-                  <button 
-                    type="button"
-                    className={`btn ${paymentMethod === 'yape_plin' ? 'btn-primary' : 'btn-secondary'}`}
+                    <CreditCard size={20} className={paymentMethod === 'tarjeta' ? 'text-primary' : ''} />
+                    <span>Tarjeta</span>
+                  </div>
+                  <div 
+                    className={`payment-method-card ${paymentMethod === 'yape_plin' ? 'active' : ''}`}
                     onClick={() => setPaymentMethod('yape_plin')}
-                    style={{ fontSize: '0.8rem', justifyContent: 'flex-start', padding: '0.65rem 0.85rem', borderRadius: '10px' }}
                   >
-                    <Smartphone size={15} /> Yape / Plin
-                  </button>
-                  <button 
-                    type="button"
-                    className={`btn ${paymentMethod === 'transferencia' ? 'btn-primary' : 'btn-secondary'}`}
+                    <Smartphone size={20} className={paymentMethod === 'yape_plin' ? 'text-warning' : ''} />
+                    <span>Yape / Plin</span>
+                  </div>
+                  <div 
+                    className={`payment-method-card ${paymentMethod === 'transferencia' ? 'active' : ''}`}
                     onClick={() => setPaymentMethod('transferencia')}
-                    style={{ fontSize: '0.8rem', justifyContent: 'flex-start', padding: '0.65rem 0.85rem', borderRadius: '10px' }}
                   >
-                    <Landmark size={15} /> Transferencia
-                  </button>
+                    <Landmark size={20} className={paymentMethod === 'transferencia' ? 'text-info' : ''} />
+                    <span>Transferencia</span>
+                  </div>
                 </div>
               </div>
 
               {paymentMethod === 'efectivo' && (
                 <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {/* Quick cash options */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Efectivo Rápido:</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 700, marginRight: '0.2rem' }}>Efectivo Rápido:</span>
                     <button
                       type="button"
-                      className="btn btn-secondary"
-                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderRadius: '6px' }}
+                      className={`quick-cash-option-btn ${amountPaid === totals.total.toString() ? 'active' : ''}`}
                       onClick={() => setAmountPaid(totals.total.toString())}
                     >
                       Paga Exacto
@@ -789,9 +791,8 @@ export default function POS({ addNotification }) {
                       <button
                         key={val}
                         type="button"
-                        className="btn btn-secondary"
+                        className={`quick-cash-option-btn ${amountPaid === val.toString() ? 'active' : ''}`}
                         disabled={val < totals.total}
-                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderRadius: '6px', opacity: val < totals.total ? 0.3 : 1 }}
                         onClick={() => setAmountPaid(val.toString())}
                       >
                         S/ {val}
@@ -799,31 +800,25 @@ export default function POS({ addNotification }) {
                     ))}
                   </div>
 
-                  <div className="grid-2" style={{ gap: '1rem' }}>
+                  <div className="grid-2" style={{ gap: '0.85rem' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Paga con (S/)</label>
+                      <label className="form-label">Efectivo Recibido (S/)</label>
                       <input 
                         type="number" 
                         className="form-input" 
                         placeholder="0.00" 
                         value={amountPaid} 
                         onChange={(e) => setAmountPaid(e.target.value)} 
-                        style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--success)' }}
+                        style={{ fontSize: '1.25rem', fontWeight: 800, color: '#34d399', textAlign: 'right', background: '#020617' }}
                       />
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Vuelto a entregar</label>
-                      <div 
-                        style={{ 
-                          fontSize: '1.5rem', 
-                          fontWeight: 900, 
-                          color: calculatedChange() > 0 ? '#fbbf24' : 'var(--success)', 
-                          padding: '0.45rem 0', 
-                          display: 'flex', 
-                          alignItems: 'center' 
-                        }}
-                      >
-                        S/ {calculatedChange().toFixed(2)}
+                      <label className="form-label">Vuelto al Cliente</label>
+                      <div className="lcd-register-screen" style={{ color: calculatedChange() > 0 ? '#fbbf24' : '#34d399' }}>
+                        <span className="lcd-label">Vuelto</span>
+                        <span className="lcd-value">
+                          S/ {calculatedChange().toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </div>
