@@ -71,10 +71,10 @@ export default function Dashboard({ setActiveTab }) {
     setLoading(true);
     setDbError(false);
     try {
-      // 1. Get products count, low stock, and image URLs
+      // 1. Get products count, low stock, and image URLs (wildcard avoids errors if image_url is missing)
       const { data: products, error: pError } = await supabase
         .from('products')
-        .select('id, name, stock, min_stock, sale_price, image_url');
+        .select('*');
 
       if (pError) throw pError;
 
@@ -116,10 +116,10 @@ export default function Dashboard({ setActiveTab }) {
         { method: 'Transferencia', pct: totalSValue > 0 ? Math.round((payMethods.transferencia / totalSValue) * 100) : 0, color: '#f59e0b', amount: `S/ ${payMethods.transferencia.toFixed(2)}` }
       ];
 
-      // 4. Get sale items to calculate real Top Selling Products and Total Items Sold
+      // 4. Get sale items to calculate real Top Selling Products and Total Items Sold (wildcard avoids errors if image_url is missing)
       const { data: saleItems, error: itemsError } = await supabase
         .from('sale_items')
-        .select('quantity, subtotal, products(name, stock, image_url)');
+        .select('quantity, subtotal, products(*)');
 
       if (itemsError) throw itemsError;
 
