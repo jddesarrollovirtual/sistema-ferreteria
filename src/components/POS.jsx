@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
+import { Html5Qrcode } from 'html5-qrcode';
 import { 
   Search, 
   ShoppingCart, 
@@ -15,7 +16,8 @@ import {
   Barcode,
   X,
   Keyboard,
-  Coins
+  Coins,
+  Camera
 } from 'lucide-react';
 
 export default function POS({ addNotification }) {
@@ -32,7 +34,90 @@ export default function POS({ addNotification }) {
   const [completedSale, setCompletedSale] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dbError, setDbError] = useState(false);
+  const [cameraScannerOpen, setCameraScannerOpen] = useState(false);
+  
   const barcodeInputRef = useRef(null);
+  const html5QrCodeRef = useRef(null);
+  const lastScannedCodeRef = useRef('');
+  const scanCooldownRef = useRef(null);
+
+  // Play cashier beep sound using browser Web Audio API
+  const playBeep = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.type = 'sine';
+      oscillator.frequency.value = 1100; // 1100 Hz beep
+      gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      oscillator.start();
+      setTimeout(() => oscillator.stop(), 80);
+    } catch (e) {
+      console.warn("Could not play scan sound:", e);
+    }
+  };
+
+  // Camera Barcode Scanner side effect
+  useEffect(() => {
+    if (cameraScannerOpen) {
+      const timer = setTimeout(() => {
+        const html5QrCode = new Html5Qrcode("scanner-video-region");
+        html5QrCodeRef.current = html5QrCode;
+        
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+          if (decodedText === lastScannedCodeRef.current) {
+            return; // Cooldown is active for this barcode
+          }
+          
+          lastScannedCodeRef.current = decodedText;
+          
+          if (scanCooldownRef.current) clearTimeout(scanCooldownRef.current);
+          scanCooldownRef.current = setTimeout(() => {
+            lastScannedCodeRef.current = '';
+          }, 1800); // 1.8 seconds cooldown for same item
+
+          // Search barcode match
+          const matchedProduct = products.find(p => p.barcode === decodedText);
+          if (matchedProduct) {
+            playBeep();
+            addToCart(matchedProduct);
+            addNotification(`Escaneado: ${matchedProduct.name}`, 'success');
+          } else {
+            addNotification(`Código desconocido: ${decodedText}`, 'warning');
+          }
+        };
+
+        const config = { 
+          fps: 15, 
+          qrbox: (width, height) => ({ width: Math.min(width * 0.85, 280), height: Math.min(height * 0.45, 110) }) 
+        };
+
+        html5QrCode.start(
+          { facingMode: "environment" }, 
+          config, 
+          qrCodeSuccessCallback
+        ).catch((err) => {
+          console.error("Error starting camera scanner:", err);
+          addNotification("No se pudo iniciar la cámara. Otorgue permisos de cámara.", "danger");
+          setCameraScannerOpen(false);
+        });
+      }, 300);
+
+      return () => {
+        clearTimeout(timer);
+        if (scanCooldownRef.current) clearTimeout(scanCooldownRef.current);
+        if (html5QrCodeRef.current) {
+          if (html5QrCodeRef.current.isScanning) {
+            html5QrCodeRef.current.stop().then(() => {
+              console.log("Scanner stopped.");
+            }).catch(err => console.error("Error stopping scanner:", err));
+          }
+        }
+      };
+    }
+  }, [cameraScannerOpen, products]);
 
   // Fetch products on mount
   useEffect(() => {
@@ -358,6 +443,14 @@ export default function POS({ addNotification }) {
             </div>
             <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 1.25rem' }}>
               Agregar
+            </button>
+            <button 
+              type="button" 
+              className="btn btn-secondary" 
+              style={{ padding: '0.75rem 1.1rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              onClick={() => setCameraScannerOpen(true)}
+            >
+              <Camera size={18} /> Escanear
             </button>
           </form>
 
@@ -814,6 +907,45 @@ export default function POS({ addNotification }) {
                 }}
               >
                 <Printer size={13} /> Imprimir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Camera Barcode Scanner Modal */}
+      {cameraScannerOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-panel" style={{ maxWidth: '380px', padding: '1.25rem', background: 'var(--bg-surface-solid)' }}>
+            <div className="modal-header" style={{ marginBottom: '1rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <Camera className="text-primary" size={20} /> Escáner de Código
+              </span>
+              <button 
+                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '1.5rem' }}
+                onClick={() => setCameraScannerOpen(false)}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', margin: 0 }}>
+                Enfoque el código de barras del producto con la cámara de su dispositivo.
+              </p>
+
+              <div className="scanner-container-relative">
+                {/* Laser Overlay animation */}
+                <div className="scanner-laser" />
+                <div id="scanner-video-region" />
+              </div>
+
+              <button 
+                className="btn btn-secondary" 
+                style={{ width: '100%', borderRadius: '10px', marginTop: '0.5rem' }}
+                onClick={() => setCameraScannerOpen(false)}
+              >
+                Detener Cámara
               </button>
             </div>
           </div>
