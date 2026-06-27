@@ -21,7 +21,8 @@ import {
   Calendar, 
   Menu, 
   Plus,
-  Barcode
+  Barcode,
+  Filter
 } from 'lucide-react';
 
 export default function App() {
