@@ -141,8 +141,8 @@ export default function Dashboard({ setActiveTab }) {
       });
       setLowStockProducts([
         { id: 101, name: 'Martillo de Uña 16oz Bellota', stock: 2, min_stock: 5, sale_price: 25.00 },
-        { id: 102, name: 'Tubo PVC 1/2" Pavco (3m)', stock: 2, min_stock: 10, sale_price: 8.90 },
-        { id: 103, name: 'Pegamento PVC Oatey 1/4 Galón', stock: 1, min_stock: 5, sale_price: 45.00 },
+        { id: 102, name: 'Tubo PVC 1/2" Pavco (3m)', stock: 0, min_stock: 10, sale_price: 8.90 },
+        { id: 103, name: 'Pegamento PVC Oatey 1/4 Galón', stock: 3, min_stock: 5, sale_price: 45.00 },
       ]);
       setRecentSales([
         { id: 201, customer_name: 'Carlos Mendoza', total: 45.00, payment_method: 'efectivo', created_at: new Date().toISOString() },
@@ -183,9 +183,12 @@ export default function Dashboard({ setActiveTab }) {
   const salesGoal = 3000.00;
   const goalPercentage = Math.min(100, (stats.totalSales / salesGoal) * 100);
 
+  // Maximum sales for top sellers progress bar scaling
+  const maxTopSales = topProducts.length > 0 ? Math.max(...topProducts.map(p => p.sales)) : 1;
+
   return (
     <div className="dashboard-container">
-      {/* DB Connection Alert (if offline) */}
+      {/* DB Connection Alert */}
       {dbError && (
         <div className="glass-panel" style={{ borderLeft: '4px solid var(--warning)', marginBottom: '1.5rem', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1rem', background: 'rgba(245, 158, 11, 0.05)', padding: '1rem' }}>
           <ShieldAlert className="text-warning" size={28} style={{ flexShrink: 0 }} />
@@ -315,7 +318,7 @@ export default function Dashboard({ setActiveTab }) {
             {loading ? (
               <p style={{ color: 'var(--text-secondary)' }}>Cargando datos...</p>
             ) : recentSales.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', textAlign: 'center', margin: 'auto 0', padding: '2rem' }}>No hay ventas registradas.</p>
+              <p style={{ color: 'var(--text-secondary)', textAlign: 'center', margin: 'auto 0', padding: '2rem' }}>No hay ventas registradas hoy.</p>
             ) : (
               <div className="table-container">
                 <table className="custom-table">
@@ -376,118 +379,154 @@ export default function Dashboard({ setActiveTab }) {
           </div>
         </div>
 
-        {/* Right Side: Alerts, Top Sellers, and Quick Actions */}
+        {/* Right Side: Stock Alerts, Top Sellers, and Quick Actions (Unified Widget Board) */}
         <div className="dashboard-right">
-          {/* Critical Stock Alerts with progress bar */}
-          <div className="glass-panel" style={{ minHeight: 0 }}>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', flexShrink: 0 }}>
-              <AlertTriangle className="text-warning" size={20} />
-              Alertas de Stock
-            </h2>
+          <div className="glass-panel" style={{ height: '100%', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: 'hidden' }}>
+            
+            {/* Section 1: Stock Alerts (Scrollable list with pulsing dots) */}
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flexGrow: 1 }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem', flexShrink: 0 }}>
+                <AlertTriangle className="text-warning" size={18} />
+                Alertas de Stock
+              </h2>
 
-            {loading ? (
-              <p style={{ color: 'var(--text-secondary)' }}>Cargando alertas...</p>
-            ) : lowStockProducts.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--success)', margin: 'auto' }}>
-                <p style={{ fontWeight: 700, fontSize: '0.95rem' }}>¡Inventario Seguro!</p>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>No hay productos por debajo del stock mínimo.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', overflowY: 'auto', flexGrow: 1, minHeight: 0 }}>
-                {lowStockProducts.map((prod) => {
-                  const ratio = Math.min(100, (prod.stock / prod.min_stock) * 100);
-                  const barColor = prod.stock === 0 ? 'var(--danger)' : 'var(--warning)';
+              {loading ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Cargando alertas...</p>
+              ) : lowStockProducts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--success)', margin: 'auto' }}>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>¡Inventario Completo!</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Sin productos con bajo stock.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', overflowY: 'auto', paddingRight: '0.15rem' }}>
+                  {lowStockProducts.map((prod) => {
+                    const ratio = Math.min(100, (prod.stock / prod.min_stock) * 100);
+                    const isZero = prod.stock === 0;
 
-                  return (
-                    <div 
-                      key={prod.id} 
-                      style={{ 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        gap: '0.4rem', 
-                        padding: '0.85rem', 
-                        background: 'rgba(255, 255, 255, 0.01)', 
-                        border: '1px solid rgba(255, 255, 255, 0.03)', 
-                        borderRadius: '12px' 
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '0.85rem' }}>
-                        <span style={{ fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
-                          {prod.name}
-                        </span>
-                        <span style={{ fontWeight: 800, color: prod.stock === 0 ? 'var(--danger)' : 'var(--warning)' }}>
-                          {prod.stock} / {prod.min_stock}
-                        </span>
+                    return (
+                      <div 
+                        key={prod.id} 
+                        style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '0.3rem', 
+                          padding: '0.75rem 0.85rem', 
+                          background: 'rgba(255, 255, 255, 0.015)', 
+                          border: '1px solid rgba(255, 255, 255, 0.03)', 
+                          borderRadius: '12px' 
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {/* Pulse Warning Indicator */}
+                          <div className={`pulse-dot ${isZero ? 'pulse-red' : 'pulse-orange'}`} />
+                          
+                          <span style={{ fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%', fontSize: '0.85rem' }}>
+                            {prod.name}
+                          </span>
+                          
+                          <span style={{ marginLeft: 'auto', fontWeight: 800, fontSize: '0.8rem', color: isZero ? 'var(--danger)' : 'var(--warning)' }}>
+                            {prod.stock} / {prod.min_stock}
+                          </span>
+                        </div>
+                        
+                        {/* Stock safety bar */}
+                        <div style={{ height: '4px', background: 'rgba(255,255,255,0.03)', borderRadius: '99px', overflow: 'hidden' }}>
+                          <div 
+                            style={{ 
+                              height: '100%', 
+                              width: `${Math.max(5, ratio)}%`, 
+                              backgroundColor: isZero ? 'var(--danger)' : 'var(--warning)', 
+                              borderRadius: '99px' 
+                            }} 
+                          />
+                        </div>
                       </div>
-                      
-                      {/* Stock safety bar */}
-                      <div style={{ height: '5px', background: 'rgba(255,255,255,0.03)', borderRadius: '99px', overflow: 'hidden' }}>
-                        <div 
-                          style={{ 
-                            height: '100%', 
-                            width: `${Math.max(5, ratio)}%`, 
-                            backgroundColor: barColor, 
-                            borderRadius: '99px' 
-                          }} 
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => setActiveTab('inventory')}
-              style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem', marginTop: '1rem', flexShrink: 0 }}
-            >
-              Ir al Inventario
-            </button>
-          </div>
-
-          {/* Top Selling Products */}
-          <div className="glass-panel" style={{ minHeight: 0, padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-              <Award size={18} className="text-primary" /> Productos Más Vendidos
-            </h3>
-            {topProducts.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textAlign: 'center', padding: '1rem', margin: 'auto' }}>
-                No hay ventas registradas.
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', overflowY: 'auto', flexGrow: 1 }}>
-                {topProducts.map((p, idx) => (
-                  <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', paddingBottom: '0.4rem', borderBottom: idx < topProducts.length - 1 ? '1px solid rgba(255,255,255,0.02)' : 'none' }}>
-                    <div style={{ maxWidth: '70%' }}>
-                      <p style={{ fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{idx + 1}. {p.name}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vendido: {p.sales} u. | Stock: {p.stock}</p>
-                    </div>
-                    <span style={{ fontWeight: 800, color: 'var(--success)' }}>{p.profit}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Quick Actions */}
-          <div className="glass-panel" style={{ flexShrink: 0, padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff' }}>Acciones Rápidas</h3>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button 
-                className="btn btn-primary" 
-                onClick={() => setActiveTab('pos')}
-                style={{ flex: 1, padding: '0.55rem', fontSize: '0.8rem' }}
-              >
-                Nueva Venta
-              </button>
-              <button 
-                className="btn btn-secondary" 
-                onClick={() => setActiveTab('inventory')}
-                style={{ flex: 1, padding: '0.55rem', fontSize: '0.8rem' }}
-              >
-                Registrar Prod.
-              </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+
+            {/* Section 2: Top Selling Products (Premium Rank Badges) */}
+            <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.85rem' }}>
+                <Award size={18} className="text-primary" /> Productos Más Vendidos
+              </h3>
+              
+              {topProducts.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textAlign: 'center', padding: '0.5rem' }}>
+                  Sin ventas registradas.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {topProducts.map((p, idx) => {
+                    const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : 'rank-3';
+                    const scalePct = maxTopSales > 0 ? (p.sales / maxTopSales) * 100 : 0;
+
+                    return (
+                      <div 
+                        key={p.name} 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '0.75rem', 
+                          padding: '0.75rem', 
+                          background: 'rgba(255, 255, 255, 0.01)', 
+                          border: '1px solid rgba(255, 255, 255, 0.03)',
+                          borderRadius: '12px'
+                        }}
+                      >
+                        {/* 3D Circular Rank Badge */}
+                        <div className={`rank-badge ${rankClass}`}>{idx + 1}</div>
+                        
+                        <div style={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                          <p style={{ fontWeight: 750, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.85rem', margin: 0 }}>
+                            {p.name}
+                          </p>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            <span>Vendido: {p.sales} u.</span>
+                            <span style={{ fontWeight: 700, color: 'var(--success)' }}>{p.profit}</span>
+                          </div>
+                          
+                          {/* Sales Proportion mini-bar */}
+                          <div style={{ height: '3px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '99px', overflow: 'hidden', marginTop: '0.1rem' }}>
+                            <div 
+                              style={{ 
+                                height: '100%', 
+                                width: `${scalePct}%`, 
+                                background: 'linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%)', 
+                                borderRadius: '99px' 
+                              }} 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Section 3: Quick Actions (Bottom controls) */}
+            <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem' }}>
+              <div style={{ display: 'flex', gap: '0.65rem' }}>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={() => setActiveTab('pos')}
+                  style={{ flex: 1, padding: '0.65rem', fontSize: '0.8rem', borderRadius: '10px' }}
+                >
+                  Nueva Venta
+                </button>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setActiveTab('inventory')}
+                  style={{ flex: 1, padding: '0.65rem', fontSize: '0.8rem', borderRadius: '10px' }}
+                >
+                  Registrar Prod.
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
