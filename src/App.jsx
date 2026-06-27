@@ -23,7 +23,8 @@ import {
   Menu, 
   Plus,
   Barcode,
-  Filter
+  Filter,
+  DollarSign
 } from 'lucide-react';
 
 export default function App() {
