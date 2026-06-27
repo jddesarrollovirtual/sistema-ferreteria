@@ -210,38 +210,40 @@ export default function App() {
           {/* Search bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexGrow: 1, maxWidth: '420px' }}>
             <Menu size={18} style={{ color: 'var(--text-secondary)', cursor: 'pointer' }} />
-            <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
-              <Barcode size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} />
-              <input 
-                id="global-search-input"
-                type="text" 
-                className="form-input" 
-                placeholder="Escanear código o buscar producto..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ 
-                  paddingLeft: '2.1rem', 
-                  paddingRight: '3.2rem', 
-                  height: '34px', 
-                  fontSize: '0.78rem',
-                  background: 'rgba(255,255,255,0.02)',
-                  borderColor: 'rgba(255,255,255,0.04)',
-                  borderRadius: '8px'
-                }} 
-              />
-              <span style={{ 
-                position: 'absolute', 
-                right: '10px', 
-                top: '50%', 
-                transform: 'translateY(-50%)', 
-                fontSize: '0.65rem', 
-                color: 'var(--text-muted)',
-                background: 'rgba(255,255,255,0.04)',
-                padding: '0.1rem 0.35rem',
-                borderRadius: '4px',
-                fontFamily: 'monospace'
-              }}>Ctrl + K</span>
-            </form>
+            {activeTab === 'pos' && (
+              <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
+                <Barcode size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} />
+                <input 
+                  id="global-search-input"
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Escanear código o buscar producto..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ 
+                    paddingLeft: '2.1rem', 
+                    paddingRight: '3.2rem', 
+                    height: '34px', 
+                    fontSize: '0.78rem',
+                    background: 'rgba(255,255,255,0.02)',
+                    borderColor: 'rgba(255,255,255,0.04)',
+                    borderRadius: '8px'
+                  }} 
+                />
+                <span style={{ 
+                  position: 'absolute', 
+                  right: '10px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  fontSize: '0.65rem', 
+                  color: 'var(--text-muted)',
+                  background: 'rgba(255,255,255,0.04)',
+                  padding: '0.1rem 0.35rem',
+                  borderRadius: '4px',
+                  fontFamily: 'monospace'
+                }}>Ctrl + K</span>
+              </form>
+            )}
           </div>
           
           {/* Header Controls */}
