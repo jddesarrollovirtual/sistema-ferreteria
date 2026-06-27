@@ -67,6 +67,10 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
   const [loading, setLoading] = useState(false);
   const [dbError, setDbError] = useState(false);
   const [cameraScannerOpen, setCameraScannerOpen] = useState(false);
+  const [manualAddModal, setManualAddModal] = useState(false);
+  const [manualProdName, setManualProdName] = useState('');
+  const [manualProdPrice, setManualProdPrice] = useState('');
+  const [manualProdQty, setManualProdQty] = useState(1);
   
   const barcodeInputRef = useRef(null);
   const html5QrCodeRef = useRef(null);
@@ -285,7 +289,7 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
   };
 
   // Add Product to Cart
-  const addToCart = (product) => {
+  const addToCart = (product, quantity = 1) => {
     if (product.stock <= 0) {
       addNotification('Este producto no tiene stock disponible.', 'danger');
       return;
@@ -295,17 +299,59 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
 
     if (existingIndex > -1) {
       const currentQty = cart[existingIndex].quantity;
-      if (currentQty >= product.stock) {
+      if (currentQty + quantity > product.stock) {
         addNotification(`Solo hay ${product.stock} unidades en stock de este producto.`, 'warning');
         return;
       }
       const updatedCart = [...cart];
-      updatedCart[existingIndex].quantity += 1;
+      updatedCart[existingIndex].quantity += quantity;
       setCart(updatedCart);
     } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
+      if (quantity > product.stock) {
+        addNotification(`Solo hay ${product.stock} unidades en stock de este producto.`, 'warning');
+        return;
+      }
+      setCart([...cart, { ...product, quantity }]);
     }
     focusSearch();
+  };
+
+  const handleManualAddSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (!manualProdName.trim()) {
+      addNotification('Ingrese el nombre del producto.', 'warning');
+      return;
+    }
+    const priceNum = Number(manualProdPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      addNotification('Ingrese un precio válido mayor a 0.', 'warning');
+      return;
+    }
+    const qtyNum = Number(manualProdQty);
+    if (isNaN(qtyNum) || qtyNum <= 0) {
+      addNotification('Ingrese una cantidad válida mayor a 0.', 'warning');
+      return;
+    }
+
+    const manualProduct = {
+      id: `manual-${Date.now()}`,
+      name: manualProdName.trim().toUpperCase(),
+      sale_price: priceNum,
+      barcode: 'MANUAL',
+      stock: 9999,
+      min_stock: 0,
+      categories: { name: 'Manual' }
+    };
+
+    addToCart(manualProduct, qtyNum);
+    
+    setManualProdName('');
+    setManualProdPrice('');
+    setManualProdQty(1);
+    setManualAddModal(false);
+    
+    playBeep();
+    addNotification('Producto manual agregado al carrito.', 'success');
   };
 
   // Update Cart Quantity
@@ -548,7 +594,7 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                 type="button" 
                 className="btn btn-primary" 
                 style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', borderRadius: '8px', background: 'linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)', border: 'none' }}
-                onClick={() => addNotification('Ingreso manual en desarrollo.', 'warning')}
+                onClick={() => setManualAddModal(true)}
               >
                 <Plus size={14} /> Agregar Manual
               </button>
@@ -1398,6 +1444,87 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                 Detener Cámara
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Product Add Modal */}
+      {manualAddModal && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-panel" style={{ background: 'var(--bg-surface-solid)', padding: '1.75rem', maxWidth: '420px', width: '100%' }}>
+            <div className="modal-header" style={{ marginBottom: '1.25rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 800, fontSize: '1.1rem' }}>
+                <Plus className="text-primary" size={20} /> Agregar Producto Manual
+              </span>
+              <button 
+                type="button"
+                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '1.5rem' }}
+                onClick={() => setManualAddModal(false)}
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleManualAddSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 650 }}>Nombre del Producto / Concepto</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={manualProdName} 
+                  onChange={(e) => setManualProdName(e.target.value)} 
+                  placeholder="Ej. Tornillo de madera / Servicio de corte"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className="grid-2" style={{ gap: '0.85rem' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 650 }}>Precio Unitario (S/)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    min="0.01"
+                    className="form-input" 
+                    value={manualProdPrice} 
+                    onChange={(e) => setManualProdPrice(e.target.value)} 
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 650 }}>Cantidad</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    className="form-input" 
+                    value={manualProdQty} 
+                    onChange={(e) => setManualProdQty(e.target.value)} 
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="modal-actions" style={{ marginTop: '0.75rem', gap: '0.5rem' }}>
+                <button 
+                  type="button"
+                  className="btn btn-secondary" 
+                  onClick={() => setManualAddModal(false)}
+                  style={{ borderRadius: '8px', flex: 1 }}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  style={{ borderRadius: '8px', flex: 1, background: 'linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)', border: 'none' }}
+                >
+                  Agregar al Carrito
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
