@@ -1590,14 +1590,16 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
                 </div>
               ` : ''}
 
-              ${(labelType === 'qr' || labelType === 'both') ? `
+              ${(labelType === 'qr') ? `
                 <div class="qr-block">
                   <div style="font-size: 8px; font-weight: bold; border: 1px solid black; width: 45px; height: 45px; margin: auto; display: flex; align-items: center; justify-content: center; background: repeating-conic-gradient(black 0% 25%, white 0% 50%) 50% / 5px 5px;"></div>
                   <div class="code" style="margin-top: 4px;">QR: ${targetLabelProduct.barcode || '77510203040'}</div>
                 </div>
               ` : ''}
 
-              <div class="price">S/ ${Number(targetLabelProduct.sale_price).toFixed(2)}</div>
+              ${(labelType !== 'barcode') ? `
+                <div class="price">S/ ${Number(targetLabelProduct.sale_price).toFixed(2)}</div>
+              ` : ''}
             </div>
           `).join('');
 
@@ -1777,16 +1779,18 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
                       </div>
                     )}
 
-                    {(labelType === 'qr' || labelType === 'both') && (
+                    {labelType === 'qr' && (
                       <div style={{ textAlign: 'center', margin: '4px 0' }}>
                         <div style={{ width: '38px', height: '38px', border: '1px solid #000', margin: 'auto', background: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 4px 4px' }}></div>
                         <div style={{ fontSize: '6.5px', marginTop: '2px' }}>QR: {targetLabelProduct.barcode || '77510203040'}</div>
                       </div>
                     )}
 
-                    <div style={{ fontSize: labelSize === '100x50' ? '14px' : '11px', fontWeight: 'bold', textAlign: 'right', borderTop: '1px solid #000', paddingTop: '2px' }}>
-                      S/ {Number(targetLabelProduct.sale_price || 25).toFixed(2)}
-                    </div>
+                    {labelType !== 'barcode' && (
+                      <div style={{ fontSize: labelSize === '100x50' ? '14px' : '11px', fontWeight: 'bold', textAlign: 'right', borderTop: '1px solid #000', paddingTop: '2px' }}>
+                        S/ {Number(targetLabelProduct.sale_price || 25).toFixed(2)}
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.75rem', textAlign: 'center' }}>
