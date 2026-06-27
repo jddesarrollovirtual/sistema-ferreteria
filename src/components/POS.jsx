@@ -575,7 +575,7 @@ export default function POS({ addNotification }) {
                     src={product.image_url || getProductImage(product.name)} 
                     alt={product.name} 
                     style={{ 
-                      width: '78px', 
+                      width: '90px', 
                       height: '100%', 
                       objectFit: 'cover',
                       background: 'rgba(0,0,0,0.2)',
