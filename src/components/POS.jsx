@@ -20,6 +20,35 @@ import {
   Camera
 } from 'lucide-react';
 
+export const getProductImage = (name) => {
+  const lowerName = (name || '').toLowerCase();
+  if (lowerName.includes('martillo')) {
+    return 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?w=150&auto=format&fit=crop&q=60';
+  }
+  if (lowerName.includes('alicate')) {
+    return 'https://images.unsplash.com/photo-1540115808298-d0b1798c4b36?w=150&auto=format&fit=crop&q=60';
+  }
+  if (lowerName.includes('llave') || lowerName.includes('inglesa')) {
+    return 'https://images.unsplash.com/photo-1618588507085-c79565432917?w=150&auto=format&fit=crop&q=60';
+  }
+  if (lowerName.includes('foco') || lowerName.includes('led') || lowerName.includes('luz')) {
+    return 'https://images.unsplash.com/photo-1550985616-10810253b84d?w=150&auto=format&fit=crop&q=60';
+  }
+  if (lowerName.includes('cable') || lowerName.includes('alambre')) {
+    return 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=150&auto=format&fit=crop&q=60';
+  }
+  if (lowerName.includes('tubo') || lowerName.includes('pvc') || lowerName.includes('pavco')) {
+    return 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=150&auto=format&fit=crop&q=60';
+  }
+  if (lowerName.includes('pegamento') || lowerName.includes('oatey') || lowerName.includes('cola')) {
+    return 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=150&auto=format&fit=crop&q=60';
+  }
+  if (lowerName.includes('pintura') || lowerName.includes('látex') || lowerName.includes('esmalte')) {
+    return 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=150&auto=format&fit=crop&q=60';
+  }
+  return 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=150&auto=format&fit=crop&q=60';
+};
+
 export default function POS({ addNotification }) {
   const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -542,30 +571,45 @@ export default function POS({ addNotification }) {
                         : '1px solid rgba(255,255,255,0.04)'
                   }}
                 >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                    <span 
-                      style={{ fontSize: '0.68rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}
-                    >
-                      {product.categories?.name || 'Ferretería'}
-                    </span>
-                    <div className="pos-product-name">
-                      {product.name}
+                  <img 
+                    src={product.image_url || getProductImage(product.name)} 
+                    alt={product.name} 
+                    style={{ 
+                      width: '64px', 
+                      height: '64px', 
+                      borderRadius: '8px', 
+                      objectFit: 'cover',
+                      background: 'rgba(0,0,0,0.15)',
+                      border: '1px solid rgba(255,255,255,0.04)',
+                      flexShrink: 0
+                    }} 
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%', justifyContent: 'space-between', minWidth: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', minWidth: 0 }}>
+                      <span 
+                        style={{ fontSize: '0.62rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}
+                      >
+                        {product.categories?.name || 'Ferretería'}
+                      </span>
+                      <div className="pos-product-name" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {product.name}
+                      </div>
+                      <div className="pos-product-code" style={{ fontSize: '0.65rem' }}>
+                        {product.barcode || 'Sin Código'}
+                      </div>
                     </div>
-                    <div className="pos-product-code">
-                      {product.barcode || 'Sin Código'}
+                    
+                    <div className="pos-product-price-row">
+                      <span className="pos-product-price">
+                        S/ {Number(product.sale_price).toFixed(2)}
+                      </span>
+                      <span 
+                        className={`badge ${isOut ? 'badge-danger' : isLow ? 'badge-warning' : 'badge-success'}`}
+                        style={{ padding: '0.15rem 0.4rem', fontSize: '0.62rem' }}
+                      >
+                        {isOut ? 'Agotado' : `Stock: ${remainingStock}`}
+                      </span>
                     </div>
-                  </div>
-                  
-                  <div className="pos-product-price-row">
-                    <span className="pos-product-price">
-                      S/ {Number(product.sale_price).toFixed(2)}
-                    </span>
-                    <span 
-                      className={`badge ${isOut ? 'badge-danger' : isLow ? 'badge-warning' : 'badge-success'}`}
-                      style={{ padding: '0.15rem 0.45rem', fontSize: '0.65rem' }}
-                    >
-                      {isOut ? 'Agotado' : `Stock: ${remainingStock}`}
-                    </span>
                   </div>
                 </div>
               );
