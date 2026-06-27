@@ -575,32 +575,31 @@ export default function POS({ addNotification }) {
                     src={product.image_url || getProductImage(product.name)} 
                     alt={product.name} 
                     style={{ 
-                      width: '64px', 
-                      height: '64px', 
-                      borderRadius: '8px', 
+                      width: '85px', 
+                      height: '100%', 
                       objectFit: 'cover',
-                      background: 'rgba(0,0,0,0.15)',
-                      border: '1px solid rgba(255,255,255,0.04)',
+                      background: 'rgba(0,0,0,0.2)',
+                      borderRight: '1px solid rgba(255,255,255,0.05)',
                       flexShrink: 0
                     }} 
                   />
-                  <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%', justifyContent: 'space-between', minWidth: 0 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', minWidth: 0 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%', justifyContent: 'space-between', padding: '0.55rem 0.75rem', minWidth: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.05rem', minWidth: 0 }}>
                       <span 
-                        style={{ fontSize: '0.62rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}
+                        style={{ fontSize: '0.6rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}
                       >
                         {product.categories?.name || 'Ferretería'}
                       </span>
-                      <div className="pos-product-name" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div className="pos-product-name">
                         {product.name}
                       </div>
-                      <div className="pos-product-code" style={{ fontSize: '0.65rem' }}>
+                      <div className="pos-product-code" style={{ fontSize: '0.62rem', color: 'var(--text-secondary)' }}>
                         {product.barcode || 'Sin Código'}
                       </div>
                     </div>
                     
                     <div className="pos-product-price-row">
-                      <span className="pos-product-price">
+                      <span className="pos-product-price" style={{ fontSize: '0.98rem' }}>
                         S/ {Number(product.sale_price).toFixed(2)}
                       </span>
                       <span 
