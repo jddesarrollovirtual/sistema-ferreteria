@@ -225,7 +225,7 @@ body {
 /* Main Content Wrapper (Takes remaining space and fits height) */
 .main-content {
   flex-grow: 1;
-  height: 100vh;
+  height: 100%;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;

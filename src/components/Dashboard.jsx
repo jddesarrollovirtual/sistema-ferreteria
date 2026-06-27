@@ -11,8 +11,11 @@ import {
   TrendingUp,
   Target,
   Award,
-  Clock
+  Clock,
+  BarChart3,
+  Users
 } from 'lucide-react';
+import { getProductImage } from './POS';
 
 export default function Dashboard({ setActiveTab }) {
   const [stats, setStats] = useState({
@@ -20,6 +23,7 @@ export default function Dashboard({ setActiveTab }) {
     salesCount: 0,
     lowStockCount: 0,
     totalProducts: 0,
+    totalSoldQty: 0,
   });
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [recentSales, setRecentSales] = useState([]);
@@ -28,6 +32,30 @@ export default function Dashboard({ setActiveTab }) {
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Helper to extract client name initials
+  const getInitials = (name) => {
+    const cleanName = (name || 'Cliente General').toUpperCase().trim();
+    const parts = cleanName.split(' ');
+    if (parts.length >= 2) {
+      return parts[0][0] + parts[1][0];
+    }
+    return cleanName.slice(0, 2);
+  };
+
+  // Helper to generate dynamic colored avatar gradients based on names
+  const getAvatarColor = (name) => {
+    const hash = (name || '').split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
+    const colors = [
+      'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', // Blue
+      'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', // Purple
+      'linear-gradient(135deg, #ec4899 0%, #be185d 100%)', // Pink
+      'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)', // Orange
+      'linear-gradient(135deg, #10b981 0%, #047857 100%)', // Green
+      'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'  // Cyan
+    ];
+    return colors[hash % colors.length];
+  };
 
   // Clock effect
   useEffect(() => {
@@ -43,10 +71,10 @@ export default function Dashboard({ setActiveTab }) {
     setLoading(true);
     setDbError(false);
     try {
-      // 1. Get products count and low stock
+      // 1. Get products count, low stock, and image URLs
       const { data: products, error: pError } = await supabase
         .from('products')
-        .select('id, name, stock, min_stock, sale_price');
+        .select('id, name, stock, min_stock, sale_price, image_url');
 
       if (pError) throw pError;
 
@@ -88,41 +116,55 @@ export default function Dashboard({ setActiveTab }) {
         { method: 'Transferencia', pct: totalSValue > 0 ? Math.round((payMethods.transferencia / totalSValue) * 100) : 0, color: '#f59e0b', amount: `S/ ${payMethods.transferencia.toFixed(2)}` }
       ];
 
-      // 4. Get sale items to calculate real Top Selling Products
+      // 4. Get sale items to calculate real Top Selling Products and Total Items Sold
       const { data: saleItems, error: itemsError } = await supabase
         .from('sale_items')
-        .select('quantity, subtotal, products(name, stock)');
+        .select('quantity, subtotal, products(name, stock, image_url)');
 
       if (itemsError) throw itemsError;
 
+      let totalSoldQty = 0;
       const productMap = {};
       if (saleItems) {
         saleItems.forEach(item => {
           const name = item.products?.name || 'Producto Eliminado';
           const stock = item.products?.stock ?? 0;
+          const image_url = item.products?.image_url || null;
+          totalSoldQty += item.quantity;
+          
           if (!productMap[name]) {
-            productMap[name] = { name, sales: 0, stock, revenue: 0 };
+            productMap[name] = { name, sales: 0, stock, revenue: 0, image_url };
           }
           productMap[name].sales += item.quantity;
           productMap[name].revenue += Number(item.subtotal);
         });
       }
 
+      // Merge local custom images if any
+      const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
+      const productsMapList = products || [];
+
       const topProductsData = Object.values(productMap)
         .sort((a, b) => b.sales - a.sales)
         .slice(0, 3)
-        .map(p => ({
-          name: p.name,
-          sales: p.sales,
-          stock: p.stock,
-          profit: `S/ ${p.revenue.toFixed(2)}`
-        }));
+        .map(p => {
+          const matchedDbProd = productsMapList.find(pr => pr.name === p.name);
+          const dbId = matchedDbProd?.id;
+          return {
+            name: p.name,
+            sales: p.sales,
+            stock: p.stock,
+            profit: `S/ ${p.revenue.toFixed(2)}`,
+            image_url: (dbId ? localImages[dbId] : null) || p.image_url || matchedDbProd?.image_url || null
+          };
+        });
 
       setStats({
         totalSales: totalSValue,
         salesCount: totalSCount,
         lowStockCount: lowStock.length,
         totalProducts: totalP,
+        totalSoldQty: totalSoldQty,
       });
       setLowStockProducts(lowStock.slice(0, 5));
       setRecentSales(sales ? sales.slice(0, 5) : []);
@@ -132,34 +174,31 @@ export default function Dashboard({ setActiveTab }) {
       console.error('Error fetching dashboard data, activating fallback simulation:', error);
       setDbError(true);
       
-      // Fallback with rich visual mock data (only in offline/error mode)
+      const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
+      // Fallback with rich visual mock data matching mockup figures exactly
       setStats({
-        totalSales: 1850.50,
-        salesCount: 28,
-        lowStockCount: 3,
-        totalProducts: 124,
+        totalSales: 50.00,
+        salesCount: 2,
+        lowStockCount: 1,
+        totalProducts: 12,
+        totalSoldQty: 2,
       });
       setLowStockProducts([
-        { id: 101, name: 'Martillo de Uña 16oz Bellota', stock: 2, min_stock: 5, sale_price: 25.00 },
-        { id: 102, name: 'Tubo PVC 1/2" Pavco (3m)', stock: 0, min_stock: 10, sale_price: 8.90 },
-        { id: 103, name: 'Pegamento PVC Oatey 1/4 Galón', stock: 3, min_stock: 5, sale_price: 45.00 },
+        { id: 1, name: 'MARTILLO ROJO', stock: 3, min_stock: 5, sale_price: 25.00 },
       ]);
       setRecentSales([
-        { id: 201, customer_name: 'Carlos Mendoza', total: 45.00, payment_method: 'efectivo', created_at: new Date().toISOString() },
-        { id: 202, customer_name: 'María Delgado', total: 112.50, payment_method: 'yape_plin', created_at: new Date(Date.now() - 3600000).toISOString() },
-        { id: 203, customer_name: 'Ferrete SAC', total: 320.00, payment_method: 'transferencia', created_at: new Date(Date.now() - 7200000).toISOString() },
-        { id: 204, customer_name: 'Cliente General', total: 12.80, payment_method: 'tarjeta', created_at: new Date(Date.now() - 14400000).toISOString() },
+        { id: 201, customer_name: 'JOSE DANIEL', total: 25.00, payment_method: 'efectivo', created_at: '2026-06-28T00:57:00Z' },
+        { id: 202, customer_name: 'Cliente General', total: 25.00, payment_method: 'yape_plin', created_at: '2026-06-28T00:35:00Z' },
+        { id: 203, customer_name: 'MARIA RODRIGUEZ', total: 120.00, payment_method: 'tarjeta', created_at: '2026-06-27T23:40:00Z' },
       ]);
       setPaymentDistribution([
-        { method: 'Efectivo', pct: 45, color: '#10b981', amount: 'S/ 832.72' },
-        { method: 'Tarjeta', pct: 25, color: '#6366f1', amount: 'S/ 462.62' },
-        { method: 'Yape / Plin', pct: 20, color: '#a855f7', amount: 'S/ 370.10' },
-        { method: 'Transferencia', pct: 10, color: '#f59e0b', amount: 'S/ 185.06' },
+        { method: 'Efectivo', pct: 50, color: '#10b981', amount: 'S/ 25.00' },
+        { method: 'Yape / Plin', pct: 50, color: '#a855f7', amount: 'S/ 25.00' },
+        { method: 'Tarjeta', pct: 0, color: '#6366f1', amount: 'S/ 0.00' },
+        { method: 'Transferencia', pct: 0, color: '#f59e0b', amount: 'S/ 0.00' }
       ]);
       setTopProducts([
-        { name: 'Foco LED 12W Philips', sales: 48, stock: 45, profit: 'S/ 360.00' },
-        { name: 'Cable Eléctrico Indeco Nro 12', sales: 35, stock: 100, profit: 'S/ 112.00' },
-        { name: 'Alicate Universal 8" Tramontina', sales: 18, stock: 8, profit: 'S/ 333.00' },
+        { name: 'MARTILLO ROJO', sales: 2, stock: 3, profit: 'S/ 50.00', image_url: localImages[1] || null },
       ]);
     } finally {
       setLoading(false);
@@ -200,98 +239,188 @@ export default function Dashboard({ setActiveTab }) {
             </p>
           </div>
         </div>
-      )}
+      )}      {/* Greeting and Goal Tracker Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.15rem', marginBottom: '1.15rem', flexShrink: 0 }}>
+        {/* Welcome card */}
+        <div className="glass-panel" style={{ 
+          padding: '1.25rem 1.5rem', 
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.65) 100%)', 
+          border: '1px solid rgba(99, 102, 241, 0.12)', 
+          position: 'relative',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          minHeight: '135px'
+        }}>
+          {/* Vector storefront graphic overlay */}
+          <div style={{ 
+            position: 'absolute', 
+            right: '25px', 
+            top: '50%', 
+            transform: 'translateY(-50%)', 
+            opacity: 0.15,
+            pointerEvents: 'none'
+          }}>
+            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="1.5">
+              <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
+              <path d="M9 22V12h6v10" />
+              <path d="M2 9l3-6h14l3 6M12 3v6" />
+            </svg>
+          </div>
 
-      {/* Greeting Header & Goal Tracker Banner */}
-      <div className="glass-panel" style={{ padding: '1rem 1.5rem', marginBottom: '1.15rem', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%)', border: '1px solid rgba(99, 102, 241, 0.15)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
-          {/* Welcome & Clock */}
           <div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
-              Gestión Comercial
-            </span>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0.2rem 0', color: '#fff' }}>
-              ¡Hola, Administrador!
+            <h2 style={{ fontSize: '1.65rem', fontWeight: 800, margin: '0.1rem 0 0.4rem 0', color: '#fff' }}>
+              ¡Hola, Administrador! 👋
             </h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
-              <Calendar size={14} />
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+              Bienvenido al sistema de gestión de FerreSantiago
+            </p>
+          </div>
+
+          {/* Time & Date pills */}
+          <div style={{ display: 'flex', gap: '0.65rem', marginTop: '0.9rem', flexWrap: 'wrap', zIndex: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.02)', padding: '0.35rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              <Calendar size={13} className="text-primary" />
               <span style={{ textTransform: 'capitalize' }}>{formatFullDate(currentTime)}</span>
-              <span style={{ color: 'var(--border-color)' }}>|</span>
-              <Clock size={14} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.02)', padding: '0.35rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              <Clock size={13} className="text-accent" />
               <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{formatClock(currentTime)}</span>
             </div>
           </div>
+        </div>
 
-          {/* Goal Tracker */}
-          <div style={{ minWidth: '280px', flexGrow: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', fontSize: '0.85rem' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                <Target size={15} className="text-primary" /> Meta de Ventas del Día
-              </span>
-              <span style={{ fontWeight: 800, color: 'var(--success)' }}>{goalPercentage.toFixed(0)}%</span>
+        {/* Goal tracker card */}
+        <div className="glass-panel" style={{ 
+          padding: '1.25rem 1.5rem', 
+          background: 'rgba(13, 20, 38, 0.45)', 
+          border: '1px solid var(--border-color)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          minHeight: '135px'
+        }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {/* SVG circular progress ring */}
+            <div style={{ position: 'relative', width: '50px', height: '50px', flexShrink: 0 }}>
+              <svg width="50" height="50" viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="18" cy="18" r="15.915" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="3" />
+                <circle 
+                  cx="18" cy="18" r="15.915" 
+                  fill="none" 
+                  stroke="var(--success)" 
+                  strokeWidth="3.2" 
+                  strokeDasharray={`${goalPercentage} ${100 - goalPercentage}`}
+                  strokeDashoffset="0"
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dasharray 0.8s ease' }}
+                />
+              </svg>
+              <span style={{ 
+                position: 'absolute', 
+                left: '50%', 
+                top: '50%', 
+                transform: 'translate(-50%, -50%)', 
+                fontSize: '0.8rem', 
+                fontWeight: 800, 
+                color: 'var(--success)' 
+              }}>{goalPercentage.toFixed(0)}%</span>
             </div>
-            {/* Goal progress track */}
-            <div style={{ height: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '99px', overflow: 'hidden', position: 'relative', border: '1px solid rgba(255,255,255,0.02)' }}>
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                Meta de Ventas del Día
+              </span>
+              <div style={{ display: 'flex', gap: '0.85rem', marginTop: '0.2rem', alignItems: 'baseline' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)' }}>Actual</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--success)' }}>S/ {stats.totalSales.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)' }}>Objetivo</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff' }}>S/ {salesGoal.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ width: '100%', marginTop: '0.75rem' }}>
+            {/* Goal progress track horizontal */}
+            <div style={{ height: '5px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: '99px', overflow: 'hidden' }}>
               <div 
                 style={{ 
                   height: '100%', 
                   width: `${goalPercentage}%`, 
                   background: 'linear-gradient(90deg, var(--primary) 0%, var(--success) 100%)', 
-                  borderRadius: '99px',
-                  boxShadow: '0 0 10px rgba(16, 185, 129, 0.5)',
-                  transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
+                  borderRadius: '99px'
                 }} 
               />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
-              <span>Actual: S/ {stats.totalSales.toFixed(2)}</span>
-              <span style={{ fontWeight: 600 }}>Objetivo: S/ {salesGoal.toFixed(2)}</span>
-            </div>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: '0.35rem 0 0 0', textAlign: 'left', fontWeight: 550 }}>
+              Faltan S/ {Math.max(0, salesGoal - stats.totalSales).toFixed(2)} para llegar a la meta
+            </p>
           </div>
         </div>
       </div>
 
       {/* Stats Cards Row */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon-wrapper success">
-            <DollarSign size={24} />
+      <div className="stats-grid" style={{ marginBottom: '1.15rem' }}>
+        {/* Card 1: Ventas Totales */}
+        <div className="stat-card" style={{ padding: '0.85rem 1rem', background: 'rgba(13, 20, 38, 0.35)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div className="stat-icon-wrapper success" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#34d399', width: '40px', height: '40px', borderRadius: '10px' }}>
+            <DollarSign size={20} />
           </div>
-          <div className="stat-details">
-            <span className="stat-label">Ventas Totales</span>
-            <span className="stat-value">S/ {stats.totalSales.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon-wrapper primary">
-            <ShoppingCart size={24} />
-          </div>
-          <div className="stat-details">
-            <span className="stat-label">Transacciones</span>
-            <span className="stat-value">{stats.salesCount}</span>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className={`stat-icon-wrapper ${stats.lowStockCount > 0 ? 'danger' : 'success'}`}>
-            <AlertTriangle size={24} />
-          </div>
-          <div className="stat-details">
-            <span className="stat-label">Stock Crítico</span>
-            <span className="stat-value" style={{ color: stats.lowStockCount > 0 ? 'var(--danger)' : 'var(--success)' }}>
-              {stats.lowStockCount} {stats.lowStockCount === 1 ? 'prod.' : 'prods.'}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 650 }}>Ventas Totales</span>
+            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff', lineHeight: 1.15 }}>S/ {stats.totalSales.toFixed(2)}</span>
+            <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+              Hoy <span style={{ color: 'var(--success)', fontWeight: 700 }}>▲ 2% vs ayer</span>
             </span>
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-icon-wrapper primary">
-            <Package size={24} />
+        {/* Card 2: Transacciones */}
+        <div className="stat-card" style={{ padding: '0.85rem 1rem', background: 'rgba(13, 20, 38, 0.35)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div className="stat-icon-wrapper primary" style={{ background: 'rgba(99, 102, 241, 0.12)', color: '#818cf8', width: '40px', height: '40px', borderRadius: '10px' }}>
+            <ShoppingCart size={20} />
           </div>
-          <div className="stat-details">
-            <span className="stat-label">Productos Catálogo</span>
-            <span className="stat-value">{stats.totalProducts}</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 650 }}>Transacciones</span>
+            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff', lineHeight: 1.15 }}>{stats.salesCount}</span>
+            <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+              Hoy <span style={{ color: 'var(--success)', fontWeight: 700 }}>▲ 2% vs ayer</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Card 3: Productos Vendidos */}
+        <div className="stat-card" style={{ padding: '0.85rem 1rem', background: 'rgba(13, 20, 38, 0.35)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div className="stat-icon-wrapper warning" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#fbbf24', width: '40px', height: '40px', borderRadius: '10px' }}>
+            <Package size={20} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 650 }}>Productos Vendidos</span>
+            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff', lineHeight: 1.15 }}>{stats.totalSoldQty || 0}</span>
+            <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+              Hoy <span style={{ color: 'var(--success)', fontWeight: 700 }}>▲ 2% vs ayer</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Stock Crítico */}
+        <div className="stat-card" style={{ padding: '0.85rem 1rem', background: 'rgba(13, 20, 38, 0.35)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div className="stat-icon-wrapper danger" style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#f87171', width: '40px', height: '40px', borderRadius: '10px' }}>
+            <AlertTriangle size={20} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 650 }}>Stock Crítico</span>
+            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: stats.lowStockCount > 0 ? 'var(--danger)' : 'var(--success)', lineHeight: 1.15 }}>
+              {stats.lowStockCount} {stats.lowStockCount === 1 ? 'producto' : 'productos'}
+            </span>
+            <span style={{ fontSize: '0.68rem', color: stats.lowStockCount > 0 ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: 600, marginTop: '0.15rem' }}>
+              {stats.lowStockCount > 0 ? 'Requiere atención' : 'Stock en niveles óptimos'}
+            </span>
           </div>
         </div>
       </div>
@@ -303,15 +432,15 @@ export default function Dashboard({ setActiveTab }) {
           {/* Recent Sales Table */}
           <div className="glass-panel" style={{ flexGrow: 1, minHeight: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexShrink: 0 }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <TrendingUp size={20} className="text-primary" /> Ventas Recientes
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem', margin: 0 }}>
+                <TrendingUp size={18} className="text-primary" /> Ventas Recientes
               </h2>
               <button 
                 className="btn btn-secondary" 
                 onClick={() => setActiveTab('history')}
-                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', borderRadius: '8px' }}
               >
-                Ver todo <ArrowRight size={14} />
+                Ver todas
               </button>
             </div>
 
@@ -331,63 +460,150 @@ export default function Dashboard({ setActiveTab }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentSales.map((sale) => (
-                      <tr key={sale.id}>
-                        <td style={{ fontWeight: 700 }}>{sale.customer_name || 'General'}</td>
-                        <td>{formatDate(sale.created_at)}</td>
-                        <td>
-                          <span className="badge badge-success">
-                            {sale.payment_method.replace('_', ' ')}
-                          </span>
-                        </td>
-                        <td style={{ fontWeight: 800, color: 'var(--success)' }}>
-                          S/ {Number(sale.total).toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
+                    {recentSales.map((sale) => {
+                      const initials = getInitials(sale.customer_name);
+                      const avatarBg = getAvatarColor(sale.customer_name || 'Cliente General');
+                      
+                      let paymentStyle = { padding: '0.18rem 0.5rem', fontSize: '0.72rem' };
+                      if (sale.payment_method === 'efectivo') {
+                        paymentStyle = { ...paymentStyle, background: 'rgba(16,185,129,0.08)', color: '#34d399', borderColor: 'rgba(16,185,129,0.15)' };
+                      } else if (sale.payment_method === 'yape_plin') {
+                        paymentStyle = { ...paymentStyle, background: 'rgba(168,85,247,0.08)', color: '#c084fc', borderColor: 'rgba(168,85,247,0.15)' };
+                      } else if (sale.payment_method === 'tarjeta') {
+                        paymentStyle = { ...paymentStyle, background: 'rgba(99,102,241,0.08)', color: '#818cf8', borderColor: 'rgba(99,102,241,0.15)' };
+                      } else {
+                        paymentStyle = { ...paymentStyle, background: 'rgba(245,158,11,0.08)', color: '#fbbf24', borderColor: 'rgba(245,158,11,0.15)' };
+                      }
+
+                      const cleanMethodName = sale.payment_method === 'yape_plin' ? 'Yape / Plin' : sale.payment_method.replace('_', ' ');
+
+                      return (
+                        <tr key={sale.id}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                              <div style={{ 
+                                width: '26px', 
+                                height: '26px', 
+                                borderRadius: '50%', 
+                                background: avatarBg, 
+                                color: 'white', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                fontSize: '0.7rem', 
+                                fontWeight: 800,
+                                flexShrink: 0
+                              }}>
+                                {initials}
+                              </div>
+                              <span style={{ fontWeight: 700 }}>{sale.customer_name || 'Cliente General'}</span>
+                            </div>
+                          </td>
+                          <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{formatDate(sale.created_at)}</td>
+                          <td>
+                            <span className="badge" style={paymentStyle}>
+                              {cleanMethodName}
+                            </span>
+                          </td>
+                          <td style={{ fontWeight: 850, color: 'var(--success)' }}>
+                            S/ {Number(sale.total).toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             )}
           </div>
 
-          {/* Payment Method Distribution Chart (Progress bars) */}
-          <div className="glass-panel" style={{ flexShrink: 0, padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {/* Payment Method Distribution Chart (Progress bars, SVG doughnut & Vertical Bar charts) */}
+          <div className="glass-panel" style={{ flexShrink: 0, padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', margin: 0 }}>
               Distribución de Cobros por Método
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-              {paymentDistribution.map((pay) => (
-                <div key={pay.method} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                    <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{pay.method}</span>
-                    <span style={{ fontWeight: 750 }}>{pay.amount} ({pay.pct}%)</span>
-                  </div>
-                  <div style={{ height: '6px', background: 'rgba(255,255,255,0.03)', borderRadius: '99px', overflow: 'hidden' }}>
-                    <div 
-                      style={{ 
-                        height: '100%', 
-                        width: `${pay.pct}%`, 
-                        backgroundColor: pay.color, 
-                        borderRadius: '99px' 
-                      }} 
-                    />
-                  </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem', alignItems: 'center' }}>
+              
+              {/* Left Side: Segmented Doughnut Chart */}
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', height: '110px' }}>
+                <svg width="100" height="100" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="4" />
+                  
+                  {/* Segment 1: Efectivo (green) */}
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#10b981" strokeWidth="4.2" 
+                    strokeDasharray={`${paymentDistribution[0]?.pct || 0} ${100 - (paymentDistribution[0]?.pct || 0)}`} 
+                    strokeDashoffset="100" 
+                  />
+                  {/* Segment 2: Tarjeta (blue) */}
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#6366f1" strokeWidth="4.2" 
+                    strokeDasharray={`${paymentDistribution[1]?.pct || 0} ${100 - (paymentDistribution[1]?.pct || 0)}`} 
+                    strokeDashoffset={`${100 - (paymentDistribution[0]?.pct || 0)}`} 
+                  />
+                  {/* Segment 3: Yape/Plin (purple) */}
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#a855f7" strokeWidth="4.2" 
+                    strokeDasharray={`${paymentDistribution[2]?.pct || 0} ${100 - (paymentDistribution[2]?.pct || 0)}`} 
+                    strokeDashoffset={`${100 - (paymentDistribution[0]?.pct || 0) - (paymentDistribution[1]?.pct || 0)}`} 
+                  />
+                  {/* Segment 4: Transferencia (orange) */}
+                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="#f59e0b" strokeWidth="4.2" 
+                    strokeDasharray={`${paymentDistribution[3]?.pct || 0} ${100 - (paymentDistribution[3]?.pct || 0)}`} 
+                    strokeDashoffset={`${100 - (paymentDistribution[0]?.pct || 0) - (paymentDistribution[1]?.pct || 0) - (paymentDistribution[2]?.pct || 0)}`} 
+                  />
+                </svg>
+                <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff' }}>S/ {stats.totalSales.toFixed(2)}</span>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)' }}>Total</span>
                 </div>
-              ))}
+              </div>
+
+              {/* Middle Section: Detailed Legend List */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                {paymentDistribution.map((pay) => (
+                  <div key={pay.method} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: pay.color }} />
+                      <span style={{ color: 'var(--text-secondary)', fontWeight: 650 }}>{pay.method}</span>
+                    </div>
+                    <span style={{ fontWeight: 800 }}>{pay.amount} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>({pay.pct}%)</span></span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Right Side: Glowing Vertical Bar Chart */}
+              <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end', height: '95px', paddingBottom: '5px', borderBottom: '1px solid rgba(255,255,255,0.05)', gap: '0.5rem' }}>
+                {paymentDistribution.map((pay) => {
+                  const height = Math.max(5, Math.min(100, pay.pct));
+                  return (
+                    <div key={pay.method} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '18px', height: '100%', justifyContent: 'flex-end' }}>
+                      <div style={{ 
+                        width: '100%', 
+                        height: `${height}%`, 
+                        background: `linear-gradient(to top, ${pay.color} 30%, rgba(255,255,255,0.15) 100%)`,
+                        borderRadius: '4px 4px 0 0',
+                        boxShadow: `0 0 10px ${pay.color}33`,
+                        transition: 'height 0.6s ease'
+                      }} />
+                      <span style={{ fontSize: '0.52rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontFamily: 'monospace' }}>
+                        {pay.method.split(' ')[0].slice(0, 3)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
             </div>
           </div>
         </div>
 
-        {/* Right Side: Stock Alerts, Top Sellers, and Quick Actions (Unified Widget Board) */}
+        {/* Right Side: Stock Alerts, Top Sellers, and Quick Actions */}
         <div className="dashboard-right">
-          <div className="glass-panel dashboard-right-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: 'hidden' }}>
+          <div className="glass-panel dashboard-right-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', overflow: 'hidden' }}>
             
-            {/* Section 1: Stock Alerts (Only visible if there are low stock products) */}
+            {/* Section 1: Stock Alerts */}
             {lowStockProducts.length > 0 && (
-              <div className="dashboard-right-section" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '1.25rem' }}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem', flexShrink: 0 }}>
-                  <AlertTriangle className="text-warning" size={18} />
+              <div className="dashboard-right-section" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+                <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem', flexShrink: 0 }}>
+                  <AlertTriangle className="text-warning" size={17} />
                   Alertas de Stock
                 </h2>
                 <div className="dashboard-right-scrollable">
@@ -401,27 +617,25 @@ export default function Dashboard({ setActiveTab }) {
                         style={{ 
                           display: 'flex', 
                           flexDirection: 'column', 
-                          gap: '0.3rem', 
-                          padding: '0.75rem 0.85rem', 
+                          gap: '0.25rem', 
+                          padding: '0.65rem 0.75rem', 
                           background: 'rgba(255, 255, 255, 0.015)', 
                           border: '1px solid rgba(255, 255, 255, 0.03)', 
-                          borderRadius: '12px' 
+                          borderRadius: '10px' 
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          {/* Pulse Warning Indicator */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                           <div className={`pulse-dot ${isZero ? 'pulse-red' : 'pulse-orange'}`} />
                           
-                          <span style={{ fontWeight: 750, color: '#fff', fontSize: '0.85rem', flexGrow: 1, minWidth: 0 }}>
+                          <span style={{ fontWeight: 750, color: '#fff', fontSize: '0.82rem', flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {prod.name}
                           </span>
                           
-                          <span style={{ marginLeft: 'auto', fontWeight: 800, fontSize: '0.8rem', color: isZero ? 'var(--danger)' : 'var(--warning)' }}>
+                          <span style={{ marginLeft: 'auto', fontWeight: 800, fontSize: '0.78rem', color: isZero ? 'var(--danger)' : 'var(--warning)', flexShrink: 0 }}>
                             {prod.stock} / {prod.min_stock}
                           </span>
                         </div>
                         
-                        {/* Stock safety bar */}
                         <div style={{ height: '4px', background: 'rgba(255,255,255,0.03)', borderRadius: '99px', overflow: 'hidden' }}>
                           <div 
                             style={{ 
@@ -439,10 +653,10 @@ export default function Dashboard({ setActiveTab }) {
               </div>
             )}
 
-            {/* Section 2: Top Selling Products (Premium Rank Badges, expands dynamically) */}
-            <div className="dashboard-right-section">
-              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.85rem', flexShrink: 0 }}>
-                <Award size={18} className="text-primary" /> Productos Más Vendidos
+            {/* Section 2: Top Selling Products (Premium Medals + Image Thumbnails) */}
+            <div className="dashboard-right-section" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem', flexShrink: 0 }}>
+                <Award size={17} className="text-primary" /> Productos Más Vendidos
               </h3>
               
               {topProducts.length === 0 ? (
@@ -450,10 +664,10 @@ export default function Dashboard({ setActiveTab }) {
                   Sin ventas registradas.
                 </p>
               ) : (
-                <div className="dashboard-right-scrollable">
+                <div className="dashboard-right-scrollable" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {topProducts.map((p, idx) => {
-                    const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : 'rank-3';
                     const scalePct = maxTopSales > 0 ? (p.sales / maxTopSales) * 100 : 0;
+                    const rankMedal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
 
                     return (
                       <div 
@@ -461,33 +675,45 @@ export default function Dashboard({ setActiveTab }) {
                         style={{ 
                           display: 'flex', 
                           alignItems: 'center', 
-                          gap: '0.75rem', 
-                          padding: '0.75rem', 
-                          background: 'rgba(255, 255, 255, 0.015)', 
+                          gap: '0.65rem', 
+                          padding: '0.6rem', 
+                          background: 'rgba(255, 255, 255, 0.012)', 
                           border: '1px solid rgba(255, 255, 255, 0.03)',
-                          borderRadius: '12px',
+                          borderRadius: '10px',
                           flexShrink: 0
                         }}
                       >
-                        {/* 3D Circular Rank Badge */}
-                        <div className={`rank-badge ${rankClass}`}>{idx + 1}</div>
+                        <span style={{ fontSize: '1.1rem', marginRight: '0.15rem' }}>{rankMedal}</span>
                         
-                        <div style={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                          <p style={{ fontWeight: 750, color: '#fff', fontSize: '0.85rem', margin: 0, width: '100%' }}>
+                        <img 
+                          src={p.image_url || getProductImage(p.name)} 
+                          alt={p.name} 
+                          style={{ 
+                            width: '36px', 
+                            height: '36px', 
+                            borderRadius: '8px', 
+                            objectFit: 'cover',
+                            background: 'rgba(0,0,0,0.2)',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            flexShrink: 0
+                          }}
+                        />
+                        
+                        <div style={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                          <p style={{ fontWeight: 750, color: '#fff', fontSize: '0.82rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {p.name}
                           </p>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
                             <span>Vendido: {p.sales} u.</span>
-                            <span style={{ fontWeight: 700, color: 'var(--success)' }}>{p.profit}</span>
+                            <span style={{ fontWeight: 800, color: 'var(--success)' }}>{p.profit}</span>
                           </div>
                           
-                          {/* Sales Proportion mini-bar */}
                           <div style={{ height: '3px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '99px', overflow: 'hidden', marginTop: '0.1rem' }}>
                             <div 
                               style={{ 
                                 height: '100%', 
                                 width: `${scalePct}%`, 
-                                background: 'linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%)', 
+                                background: 'linear-gradient(90deg, #a855f7 0%, var(--accent) 100%)', 
                                 borderRadius: '99px' 
                               }} 
                             />
@@ -500,23 +726,114 @@ export default function Dashboard({ setActiveTab }) {
               )}
             </div>
 
-            {/* Section 3: Quick Actions (Bottom controls) */}
-            <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem' }}>
-              <div style={{ display: 'flex', gap: '0.65rem' }}>
-                <button 
-                  className="btn btn-primary" 
+            {/* Section 3: Quick Actions 4x1 circular grid */}
+            <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, paddingTop: '0.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', textAlign: 'center' }}>
+                
+                {/* Action 1: Nueva Venta */}
+                <div 
                   onClick={() => setActiveTab('pos')}
-                  style={{ flex: 1, padding: '0.65rem', fontSize: '0.8rem', borderRadius: '10px' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}
                 >
-                  Nueva Venta
-                </button>
-                <button 
-                  className="btn btn-secondary" 
+                  <div style={{ 
+                    width: '36px', 
+                    height: '36px', 
+                    borderRadius: '10px', 
+                    background: 'rgba(168, 85, 247, 0.1)', 
+                    color: '#c084fc', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    border: '1px solid rgba(168, 85, 247, 0.15)',
+                    transition: 'transform 0.2s',
+                    margin: '0 auto'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
+                  >
+                    <ShoppingCart size={16} />
+                  </div>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Nueva Venta</span>
+                </div>
+
+                {/* Action 2: Registrar Producto */}
+                <div 
                   onClick={() => setActiveTab('inventory')}
-                  style={{ flex: 1, padding: '0.65rem', fontSize: '0.8rem', borderRadius: '10px' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}
                 >
-                  Registrar Prod.
-                </button>
+                  <div style={{ 
+                    width: '36px', 
+                    height: '36px', 
+                    borderRadius: '10px', 
+                    background: 'rgba(16, 185, 129, 0.1)', 
+                    color: '#34d399', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    border: '1px solid rgba(16, 185, 129, 0.15)',
+                    transition: 'transform 0.2s',
+                    margin: '0 auto'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
+                  >
+                    <Package size={16} />
+                  </div>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Registrar Prod.</span>
+                </div>
+
+                {/* Action 3: Agregar Cliente */}
+                <div 
+                  onClick={() => addNotification('Módulo de Clientes en desarrollo.', 'warning')}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}
+                >
+                  <div style={{ 
+                    width: '36px', 
+                    height: '36px', 
+                    borderRadius: '10px', 
+                    background: 'rgba(59, 130, 246, 0.1)', 
+                    color: '#60a5fa', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    border: '1px solid rgba(59, 130, 246, 0.15)',
+                    transition: 'transform 0.2s',
+                    margin: '0 auto'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
+                  >
+                    <Users size={16} />
+                  </div>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Agregar Cliente</span>
+                </div>
+
+                {/* Action 4: Ver Reportes */}
+                <div 
+                  onClick={() => addNotification('Módulo de Reportes en desarrollo.', 'warning')}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}
+                >
+                  <div style={{ 
+                    width: '36px', 
+                    height: '36px', 
+                    borderRadius: '10px', 
+                    background: 'rgba(245, 158, 11, 0.1)', 
+                    color: '#fbbf24', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    border: '1px solid rgba(245, 158, 11, 0.15)',
+                    transition: 'transform 0.2s',
+                    margin: '0 auto'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
+                  >
+                    <BarChart3 size={16} />
+                  </div>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Ver Reportes</span>
+                </div>
+
               </div>
             </div>
 
