@@ -49,9 +49,11 @@ export const getProductImage = (name) => {
   return 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=150&auto=format&fit=crop&q=60';
 };
 
-export default function POS({ addNotification }) {
+export default function POS({ searchQuery: propSearchQuery, setSearchQuery: propSetSearchQuery, addNotification }) {
   const [products, setProducts] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const searchQuery = propSearchQuery !== undefined ? propSearchQuery : localSearchQuery;
+  const setSearchQuery = propSetSearchQuery !== undefined ? propSetSearchQuery : setLocalSearchQuery;
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [cart, setCart] = useState([]);
   const [customerName, setCustomerName] = useState('Cliente General');
@@ -175,16 +177,26 @@ export default function POS({ addNotification }) {
   // Keyboard Shortcuts & USB Scanner Auto-Redirect Hook
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Auto-focus redirection: If active element is not another form input/textarea,
-      // and user types alphanumeric key (like a scanner does), redirect focus to the barcode search input.
+      const globalSearch = document.getElementById('global-search-input');
       const activeEl = document.activeElement;
       const isTypingElsewhere = activeEl && 
         (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') && 
-        activeEl !== barcodeInputRef.current;
+        activeEl !== globalSearch && activeEl !== barcodeInputRef.current;
       
       if (!isTypingElsewhere && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        if (barcodeInputRef.current && document.activeElement !== barcodeInputRef.current) {
+        if (globalSearch && document.activeElement !== globalSearch) {
+          globalSearch.focus();
+        } else if (barcodeInputRef.current && document.activeElement !== barcodeInputRef.current) {
           barcodeInputRef.current.focus();
+        }
+      }
+
+      // If user hits Enter while inside the search input, trigger barcode submission
+      if (e.key === 'Enter') {
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl === globalSearch || activeEl === barcodeInputRef.current)) {
+          e.preventDefault();
+          handleBarcodeSubmit();
         }
       }
 
@@ -220,10 +232,13 @@ export default function POS({ addNotification }) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cart, checkoutModal, ticketModal]);
+  }, [cart, checkoutModal, ticketModal, searchQuery]);
 
   const focusSearch = () => {
-    if (barcodeInputRef.current) {
+    const globalSearch = document.getElementById('global-search-input');
+    if (globalSearch) {
+      globalSearch.focus();
+    } else if (barcodeInputRef.current) {
       barcodeInputRef.current.focus();
     }
   };
@@ -323,7 +338,7 @@ export default function POS({ addNotification }) {
 
   // Barcode quick add
   const handleBarcodeSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!searchQuery.trim()) return;
 
     const query = searchQuery.trim();
@@ -334,6 +349,7 @@ export default function POS({ addNotification }) {
     if (matchedProduct) {
       addToCart(matchedProduct);
       setSearchQuery('');
+      playBeep();
       addNotification(`Agregado: ${matchedProduct.name}`, 'success');
     } else {
       addNotification('Búsqueda sin coincidencia exacta. Filtrando grilla.', 'warning');
@@ -495,174 +511,322 @@ export default function POS({ addNotification }) {
       <div className="pos-container">
         
         {/* Left Side: Product catalog search and selection */}
-        <div className="pos-catalog-section glass-panel" style={{ padding: '1.15rem' }}>
+        <div className="pos-catalog-section glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: 0 }}>
           
-          {/* Supabase status and header title */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', flexShrink: 0 }}>
-            <div>
-              <h2 style={{ fontSize: '1.15rem', fontWeight: 950, margin: 0, color: '#fff' }}>
+          {/* Title / Header Row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ 
+                width: '38px', 
+                height: '38px', 
+                background: 'rgba(99, 102, 241, 0.15)', 
+                border: '1px solid rgba(99, 102, 241, 0.25)', 
+                borderRadius: '10px', 
+                color: 'var(--primary)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center' 
+              }}>
+                <ShoppingCart size={18} />
+              </div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: '#fff' }}>
                 Punto de Venta
               </h2>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: 'rgba(255,255,255,0.03)', padding: '0.35rem 0.65rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <span style={{ 
-                width: '7px', 
-                height: '7px', 
-                borderRadius: '50%', 
-                background: dbError ? 'var(--danger)' : 'var(--success)', 
-                boxShadow: dbError ? '0 0 6px var(--danger)' : '0 0 6px var(--success)',
-                display: 'inline-block'
-              }} />
-              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                {dbError ? 'Modo Simulación (Local)' : 'Supabase Online'}
-              </span>
+            
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', borderRadius: '8px' }}
+                onClick={() => setCameraScannerOpen(true)}
+              >
+                <Camera size={14} /> Escanear
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', borderRadius: '8px', background: 'linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)', border: 'none' }}
+                onClick={() => addNotification('Ingreso manual en desarrollo.', 'warning')}
+              >
+                <Plus size={14} /> Agregar Manual
+              </button>
             </div>
           </div>
 
-          {/* Header Search with Barcode Scanner Indicator */}
-          <form onSubmit={handleBarcodeSubmit} className="pos-search-bar" style={{ marginBottom: '0.85rem' }}>
-            <div style={{ position: 'relative', flexGrow: 1 }}>
-              <Barcode 
-                size={20} 
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} 
-              />
-              <input
-                ref={barcodeInputRef}
-                type="text"
-                className="form-input"
-                placeholder="Escanee código o busque herramientas, plomería, pernos..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '2.65rem' }}
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 1.25rem' }}>
-              Agregar
-            </button>
-            <button 
-              type="button" 
-              className="btn btn-secondary" 
-              style={{ padding: '0.75rem 1.1rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-              onClick={() => setCameraScannerOpen(true)}
-            >
-              <Camera size={18} /> Escanear
-            </button>
-          </form>
-
-          {/* Dynamic Category Tabs */}
-          <div className="category-tab-scroll">
+          {/* Category Filter Capsules bar */}
+          <div className="category-tab-scroll" style={{ flexShrink: 0, marginBottom: '0.25rem' }}>
             {categoriesList.map((cat) => (
               <button
                 key={cat}
                 type="button"
                 className={`category-tab-btn ${selectedCategory === cat ? 'active' : ''}`}
                 onClick={() => setSelectedCategory(cat)}
+                style={{ 
+                  borderRadius: '8px', 
+                  fontSize: '0.78rem',
+                  padding: '0.4rem 0.95rem',
+                  fontWeight: 650
+                }}
               >
-                {cat}
+                {cat === 'Todos' ? 'Todos' : cat}
               </button>
             ))}
+            {/* Ellipsis capsule more button */}
+            <button 
+              type="button" 
+              className="category-tab-btn" 
+              style={{ borderRadius: '8px', padding: '0.4rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              onClick={() => addNotification('Más categorías en desarrollo.', 'warning')}
+            >
+              ...
+            </button>
           </div>
 
-          {/* Products Grid */}
-          <div className="pos-products-grid">
-            {filteredProducts.map((product) => {
-              const cartItem = cart.find((item) => item.id === product.id);
-              const remainingStock = product.stock - (cartItem ? cartItem.quantity : 0);
-              const isLow = remainingStock > 0 && remainingStock <= product.min_stock;
-              const isOut = remainingStock <= 0;
+          {/* Products catalog section */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
+            {/* Subheading: Productos Destacados */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+              <span style={{ color: '#fbbf24', fontSize: '1.05rem' }}>⭐</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>Productos Destacados</span>
+            </div>
 
-              return (
-                <div
-                  key={product.id}
-                  className={`pos-product-card ${isOut ? 'out-of-stock' : ''}`}
-                  onClick={() => remainingStock > 0 && addToCart(product)}
-                  style={{
-                    border: isOut 
-                      ? '1px solid var(--danger-glow)' 
-                      : isLow 
-                        ? '1px solid rgba(245, 158, 11, 0.25)' 
-                        : '1px solid rgba(255,255,255,0.04)'
-                  }}
-                >
-                  <img 
-                    src={product.image_url || getProductImage(product.name)} 
-                    alt={product.name} 
-                    style={{ 
-                      width: '90px', 
+            {/* Products Grid */}
+            <div className="pos-products-grid" style={{ flexGrow: 1, overflowY: 'auto' }}>
+              {filteredProducts.map((product) => {
+                const cartItem = cart.find((item) => item.id === product.id);
+                const remainingStock = product.stock - (cartItem ? cartItem.quantity : 0);
+                const isLow = remainingStock > 0 && remainingStock <= product.min_stock;
+                const isOut = remainingStock <= 0;
+
+                return (
+                  <div
+                    key={product.id}
+                    className={`pos-product-card ${isOut ? 'out-of-stock' : ''}`}
+                    onClick={() => remainingStock > 0 && addToCart(product)}
+                    style={{
+                      display: 'flex',
+                      background: 'rgba(13, 20, 38, 0.3)',
+                      border: isOut 
+                        ? '1px solid rgba(239, 68, 68, 0.25)' 
+                        : isLow 
+                          ? '1px solid rgba(245, 158, 11, 0.22)' 
+                          : '1px solid rgba(255, 255, 255, 0.04)',
+                      borderRadius: '16px',
+                      overflow: 'hidden',
+                      height: '115px',
+                      position: 'relative',
+                      cursor: remainingStock > 0 ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (remainingStock > 0) {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.35)';
+                        e.currentTarget.style.background = 'rgba(13, 20, 38, 0.45)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.borderColor = isOut 
+                        ? 'rgba(239, 68, 68, 0.25)' 
+                        : isLow 
+                          ? 'rgba(245, 158, 11, 0.22)' 
+                          : 'rgba(255, 255, 255, 0.04)';
+                      e.currentTarget.style.background = 'rgba(13, 20, 38, 0.3)';
+                    }}
+                  >
+                    {/* Left: Beautifully rounded product image */}
+                    <div style={{ width: '100px', height: '100%', padding: '0.5rem', flexShrink: 0 }}>
+                      <img 
+                        src={product.image_url || getProductImage(product.name)} 
+                        alt={product.name} 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'cover',
+                          borderRadius: '10px',
+                          background: 'rgba(0,0,0,0.25)'
+                        }} 
+                      />
+                    </div>
+
+                    {/* Right: Text area & Info */}
+                    <div style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      flexGrow: 1, 
                       height: '100%', 
-                      objectFit: 'cover',
-                      background: 'rgba(0,0,0,0.2)',
-                      borderRight: '1px solid rgba(255,255,255,0.05)',
-                      flexShrink: 0
-                    }} 
-                  />
-                  <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%', justifyContent: 'space-between', padding: '0.5rem 0.65rem', minWidth: 0 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.05rem', minWidth: 0 }}>
-                      <span 
-                        style={{ fontSize: '0.6rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}
-                      >
-                        {product.categories?.name || 'Ferretería'}
-                      </span>
-                      <div className="pos-product-name">
-                        {product.name}
+                      justifyContent: 'space-between', 
+                      padding: '0.65rem 0.85rem 0.65rem 0.35rem', 
+                      minWidth: 0 
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', minWidth: 0 }}>
+                        {/* Category Badge Capsule */}
+                        <span 
+                          style={{ 
+                            fontSize: '0.58rem', 
+                            color: 'var(--primary)', 
+                            background: 'rgba(99, 102, 241, 0.08)',
+                            border: '1px solid rgba(99, 102, 241, 0.15)',
+                            padding: '0.1rem 0.4rem',
+                            borderRadius: '4px',
+                            fontWeight: 750, 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.5px',
+                            alignSelf: 'flex-start'
+                          }}
+                        >
+                          {product.categories?.name || 'Ferretería'}
+                        </span>
+                        
+                        <div className="pos-product-name" style={{ fontSize: '0.85rem', fontWeight: 750, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '0.15rem' }}>
+                          {product.name}
+                        </div>
+                        
+                        <div className="pos-product-code" style={{ fontSize: '0.62rem', color: 'var(--text-secondary)' }}>
+                          {product.barcode || 'Sin Código'}
+                        </div>
                       </div>
-                      <div className="pos-product-code" style={{ fontSize: '0.62rem', color: 'var(--text-secondary)' }}>
-                        {product.barcode || 'Sin Código'}
+                      
+                      {/* Price and Stock row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '1.08rem', fontWeight: 800, color: 'var(--success)' }}>
+                          S/ {Number(product.sale_price).toFixed(2)}
+                        </span>
+                        <span 
+                          className={`badge ${isOut ? 'badge-danger' : isLow ? 'badge-warning' : 'badge-success'}`}
+                          style={{ 
+                            padding: '0.15rem 0.45rem', 
+                            fontSize: '0.62rem', 
+                            fontWeight: 650, 
+                            borderRadius: '6px', 
+                            background: isOut ? 'rgba(239,68,68,0.1)' : isLow ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)',
+                            color: isOut ? 'var(--danger)' : isLow ? 'var(--warning)' : 'var(--success)',
+                            border: isOut ? '1px solid rgba(239,68,68,0.2)' : isLow ? '1px solid rgba(245,158,11,0.2)' : '1px solid rgba(16,185,129,0.2)',
+                            whiteSpace: 'nowrap' 
+                          }}
+                        >
+                          {isOut ? 'Agotado' : `Stock: ${remainingStock}`}
+                        </span>
                       </div>
                     </div>
-                    
-                    <div className="pos-product-price-row">
-                      <span className="pos-product-price" style={{ fontSize: '0.98rem' }}>
-                        S/ {Number(product.sale_price).toFixed(2)}
-                      </span>
-                      <span 
-                        className={`badge ${isOut ? 'badge-danger' : isLow ? 'badge-warning' : 'badge-success'}`}
-                        style={{ padding: '0.15rem 0.4rem', fontSize: '0.62rem', whiteSpace: 'nowrap' }}
+
+                    {/* Circular Add Button + */}
+                    {remainingStock > 0 && (
+                      <div 
+                        style={{ 
+                          position: 'absolute', 
+                          right: '12px', 
+                          top: '12px', 
+                          width: '24px', 
+                          height: '24px', 
+                          borderRadius: '50%', 
+                          background: 'rgba(99, 102, 241, 0.15)', 
+                          border: '1px solid rgba(99, 102, 241, 0.25)', 
+                          color: 'var(--primary)', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          fontSize: '0.9rem',
+                          fontWeight: 800
+                        }}
                       >
-                        {isOut ? 'Agotado' : `Stock: ${remainingStock}`}
-                      </span>
-                    </div>
+                        <Plus size={14} />
+                      </div>
+                    )}
                   </div>
+                );
+              })}
+              {filteredProducts.length === 0 && (
+                <div style={{ color: 'var(--text-secondary)', gridColumn: '1 / -1', textAlign: 'center', padding: '3rem' }}>
+                  <Search size={32} style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', opacity: 0.3 }} />
+                  <p>No se encontraron productos coincidentes.</p>
                 </div>
-              );
-            })}
-            {filteredProducts.length === 0 && (
-              <div style={{ color: 'var(--text-secondary)', gridColumn: '1 / -1', textAlign: 'center', padding: '3rem' }}>
-                <Search size={32} style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', opacity: 0.3 }} />
-                <p>No se encontraron productos coincidentes.</p>
+              )}
+            </div>
+
+            {/* Show "Ver más productos" pill button at the bottom of the grid */}
+            {filteredProducts.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.2rem', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.04)',
+                    color: 'var(--text-secondary)',
+                    padding: '0.35rem 1rem',
+                    borderRadius: '99px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}
+                  onClick={() => addNotification('Cargando más productos...', 'primary')}
+                >
+                  Ver más productos <ChevronDown size={12} />
+                </button>
               </div>
             )}
           </div>
 
-          {/* Keyboard HUD Footer */}
+          {/* Keyboard HUD Footer Shortcuts bar */}
           <div 
             style={{ 
               display: 'flex', 
-              gap: '1rem', 
-              marginTop: '1rem', 
+              alignItems: 'center',
+              gap: '1.25rem', 
+              marginTop: '0.85rem', 
               borderTop: '1px solid var(--border-color)', 
               paddingTop: '0.75rem', 
               fontSize: '0.75rem', 
               color: 'var(--text-secondary)',
-              flexShrink: 0
+              flexShrink: 0,
+              flexWrap: 'wrap'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Keyboard size={14} className="text-primary" />
-              <span>Teclas:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#fff', fontWeight: 650 }}>
+              <span>Atajos de Teclado</span>
             </div>
-            <div><strong style={{ color: '#fff', background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: '4px' }}>F2</strong> Buscar</div>
-            <div><strong style={{ color: '#fff', background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: '4px' }}>F8</strong> Vaciar Carrito</div>
-            <div><strong style={{ color: '#fff', background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: '4px' }}>F12</strong> Cobrar Venta</div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <strong style={{ color: '#fff', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '0.15rem 0.45rem', borderRadius: '5px', fontSize: '0.68rem', fontFamily: 'monospace' }}>F2</strong> 
+              <span style={{ color: 'var(--text-secondary)' }}>Buscar</span>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <strong style={{ color: '#fff', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '0.15rem 0.45rem', borderRadius: '5px', fontSize: '0.68rem', fontFamily: 'monospace' }}>F8</strong> 
+              <span style={{ color: 'var(--text-secondary)' }}>Vaciar Carrito</span>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <strong style={{ color: '#fff', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '0.15rem 0.45rem', borderRadius: '5px', fontSize: '0.68rem', fontFamily: 'monospace' }}>F12</strong> 
+              <span style={{ color: 'var(--text-secondary)' }}>Cobrar Venta</span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <strong style={{ color: '#fff', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '0.15rem 0.45rem', borderRadius: '5px', fontSize: '0.68rem', fontFamily: 'monospace' }}>Ctrl + K</strong> 
+              <span style={{ color: 'var(--text-secondary)' }}>Escanear</span>
+            </div>
           </div>
         </div>
 
         {/* Right Side: Shopping Cart / Sidebar Bill */}
-        <div className="pos-cart-section glass-panel" style={{ padding: '1.15rem' }}>
+        <div className="pos-cart-section glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', overflow: 'hidden' }}>
           
-          <div className="pos-cart-header" style={{ marginBottom: '1rem', paddingBottom: '0.75rem' }}>
-            <span style={{ fontSize: '1.05rem', fontWeight: 800 }}>Boleta de Venta</span>
+          {/* Cart Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#fff' }}>Boleta de Venta</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <span className="badge" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.2)', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700 }}>
+                {cart.reduce((sum, item) => sum + item.quantity, 0)} Items
+              </span>
               {cart.length > 0 && (
                 <button 
                   type="button" 
@@ -670,91 +834,287 @@ export default function POS({ addNotification }) {
                     setCart([]);
                     addNotification('Carrito vaciado.', 'warning');
                   }}
-                  style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                  style={{ 
+                    background: 'rgba(239,68,68,0.1)', 
+                    border: '1px solid rgba(239,68,68,0.2)', 
+                    color: 'var(--danger)', 
+                    padding: '0.3rem',
+                    borderRadius: '6px',
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    transition: 'opacity 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = 0.8}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = 1}
                 >
-                  <Trash2 size={12} /> Limpiar
+                  <Trash2 size={13} />
                 </button>
               )}
-              <span className="badge badge-success" style={{ padding: '0.25rem 0.5rem' }}>
-                {cart.reduce((sum, item) => sum + item.quantity, 0)} items
-              </span>
             </div>
           </div>
 
           {/* Cart Items List */}
-          <div className="pos-cart-items" style={{ gap: '0.5rem', marginBottom: '1rem' }}>
+          <div className="pos-cart-items" style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.6rem', paddingRight: '0.15rem' }}>
             {cart.map((item) => (
-              <div key={item.id} className="pos-cart-item" style={{ padding: '0.65rem 0.75rem', borderRadius: '10px' }}>
-                <div className="pos-cart-item-info" style={{ gap: '0.1rem' }}>
-                  <span className="pos-cart-item-name" style={{ fontSize: '0.8rem', fontWeight: 700 }}>
+              <div 
+                key={item.id} 
+                className="pos-cart-item" 
+                style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.65rem',
+                  padding: '0.6rem 0.75rem', 
+                  background: 'rgba(255, 255, 255, 0.015)',
+                  border: '1px solid rgba(255, 255, 255, 0.03)',
+                  borderRadius: '12px',
+                  position: 'relative'
+                }}
+              >
+                {/* Item image */}
+                <img 
+                  src={item.image_url || getProductImage(item.name)} 
+                  alt={item.name} 
+                  style={{ 
+                    width: '38px', 
+                    height: '38px', 
+                    borderRadius: '8px', 
+                    objectFit: 'cover',
+                    background: 'rgba(0,0,0,0.2)',
+                    flexShrink: 0
+                  }}
+                />
+
+                <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, gap: '0.1rem' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 750, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '1.25rem' }}>
                     {item.name}
                   </span>
-                  <span className="pos-cart-item-price" style={{ fontSize: '0.75rem' }}>
-                    S/ {Number(item.sale_price).toFixed(2)} c/u
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                    {item.barcode || 'Sin código'}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)' }}>
+                    S/ {Number(item.sale_price).toFixed(2)}
                   </span>
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
-                  <div className="pos-cart-item-qty-controls">
-                    <button className="qty-btn" style={{ width: '22px', height: '22px' }} onClick={() => updateQty(item.id, -1)}>
-                      <Minus size={10} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                  {/* Quantity controls capsule */}
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    background: 'rgba(255, 255, 255, 0.02)', 
+                    border: '1px solid rgba(255, 255, 255, 0.05)', 
+                    borderRadius: '8px', 
+                    padding: '0.15rem' 
+                  }}>
+                    <button 
+                      className="qty-btn" 
+                      style={{ width: '20px', height: '20px', borderRadius: '5px', background: 'none', border: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} 
+                      onClick={() => updateQty(item.id, -1)}
+                    >
+                      <Minus size={9} />
                     </button>
-                    <span className="qty-value" style={{ fontSize: '0.8rem', minWidth: '12px' }}>{item.quantity}</span>
-                    <button className="qty-btn" style={{ width: '22px', height: '22px' }} onClick={() => updateQty(item.id, 1)}>
-                      <Plus size={10} />
+                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fff', minWidth: '16px', textAlign: 'center' }}>{item.quantity}</span>
+                    <button 
+                      className="qty-btn" 
+                      style={{ width: '20px', height: '20px', borderRadius: '5px', background: 'none', border: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} 
+                      onClick={() => updateQty(item.id, 1)}
+                    >
+                      <Plus size={9} />
                     </button>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span className="pos-cart-item-total" style={{ fontSize: '0.85rem', fontWeight: 800 }}>
-                      S/ {(item.sale_price * item.quantity).toFixed(2)}
-                    </span>
-                    <Trash2 
-                      size={13} 
-                      className="text-danger" 
-                      style={{ cursor: 'pointer', opacity: 0.7 }} 
-                      onClick={() => removeFromCart(item.id)}
-                    />
-                  </div>
+                  
+                  {/* Item Total Price */}
+                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', minWidth: '55px', textAlign: 'right' }}>
+                    S/ {(item.sale_price * item.quantity).toFixed(2)}
+                  </span>
                 </div>
+
+                {/* Tiny delete cross */}
+                <button 
+                  type="button"
+                  onClick={() => removeFromCart(item.id)}
+                  style={{ 
+                    position: 'absolute', 
+                    right: '6px', 
+                    top: '6px', 
+                    background: 'none', 
+                    border: 'none', 
+                    color: 'var(--text-muted)', 
+                    cursor: 'pointer', 
+                    padding: 0, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    opacity: 0.6
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = 0.6}
+                >
+                  <X size={11} />
+                </button>
               </div>
             ))}
+
             {cart.length === 0 && (
-              <div style={{ textAlign: 'center', margin: 'auto 0', color: 'var(--text-muted)', padding: '2rem' }}>
-                <ShoppingCart size={40} style={{ marginBottom: '0.75rem', opacity: 0.15, margin: '0 auto' }} />
+              <div style={{ textAlign: 'center', margin: 'auto 0', color: 'var(--text-muted)', padding: '2rem 1rem' }}>
+                <ShoppingCart size={36} style={{ marginBottom: '0.65rem', opacity: 0.15, margin: '0 auto' }} />
                 <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
                   Carrito Vacío
                 </p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  Seleccione productos de la izquierda para facturar.
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  Seleccione productos del catálogo para facturar.
                 </p>
               </div>
             )}
           </div>
 
-          {/* Totals Box */}
-          <div className="pos-cart-totals" style={{ paddingTop: '0.85rem', marginBottom: '1rem', gap: '0.4rem' }}>
-            <div className="pos-total-row" style={{ fontSize: '0.8rem' }}>
+          {/* Dotted Instruction Banner */}
+          <div style={{ 
+            border: '1px dashed rgba(99, 102, 241, 0.3)', 
+            background: 'rgba(99, 102, 241, 0.02)', 
+            borderRadius: '10px', 
+            padding: '0.65rem', 
+            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.45rem',
+            flexShrink: 0
+          }}>
+            <Barcode size={16} className="text-primary" />
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 550 }}>
+              Escanea más productos o agrégalos desde el catálogo
+            </span>
+          </div>
+
+          {/* Totals Summary */}
+          <div style={{ 
+            borderTop: '1px solid var(--border-color)', 
+            paddingTop: '0.75rem', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.35rem',
+            flexShrink: 0 
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
               <span>Subtotal (sin IGV)</span>
-              <span>S/ {totals.subtotal.toFixed(2)}</span>
+              <span style={{ fontWeight: 600 }}>S/ {totals.subtotal.toFixed(2)}</span>
             </div>
-            <div className="pos-total-row" style={{ fontSize: '0.8rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
               <span>IGV (18%)</span>
-              <span>S/ {totals.tax.toFixed(2)}</span>
+              <span style={{ fontWeight: 600 }}>S/ {totals.tax.toFixed(2)}</span>
             </div>
-            <div className="pos-total-row grand-total" style={{ fontSize: '1.35rem', paddingTop: '0.6rem', marginTop: '0.2rem' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              fontSize: '1.05rem', 
+              fontWeight: 800, 
+              color: '#fff',
+              marginTop: '0.35rem', 
+              paddingTop: '0.45rem', 
+              borderTop: '1px dashed rgba(255,255,255,0.06)' 
+            }}>
               <span>Total a Cobrar</span>
-              <span>S/ {totals.total.toFixed(2)}</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--success)' }}>
+                S/ {totals.total.toFixed(2)}
+              </span>
             </div>
           </div>
 
+          {/* Big Green Checkout Button */}
           <button 
+            type="button"
             className="btn btn-success" 
-            style={{ width: '100%', padding: '0.85rem', fontSize: '0.95rem', borderRadius: '12px' }}
+            style={{ 
+              width: '100%', 
+              padding: '0.75rem', 
+              fontSize: '0.92rem', 
+              borderRadius: '10px', 
+              fontWeight: 750, 
+              background: '#10b981', 
+              border: 'none',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+              cursor: cart.length === 0 ? 'not-allowed' : 'pointer',
+              flexShrink: 0 
+            }}
             disabled={cart.length === 0}
             onClick={handleCheckout}
           >
-            Registrar Venta (F12)
+            Cobrar Venta (F12)
           </button>
+
+          {/* Payment Methods selector row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.45rem', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('efectivo')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                padding: '0.45rem',
+                fontSize: '0.75rem',
+                fontWeight: 650,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: paymentMethod === 'efectivo' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255,255,255,0.01)',
+                border: paymentMethod === 'efectivo' ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.04)',
+                color: paymentMethod === 'efectivo' ? '#10b981' : 'var(--text-secondary)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Coins size={13} />
+              Efectivo
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('yape_plin')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                padding: '0.45rem',
+                fontSize: '0.75rem',
+                fontWeight: 650,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: paymentMethod === 'yape_plin' ? 'rgba(168, 85, 247, 0.08)' : 'rgba(255,255,255,0.01)',
+                border: paymentMethod === 'yape_plin' ? '1px solid #a855f7' : '1px solid rgba(255,255,255,0.04)',
+                color: paymentMethod === 'yape_plin' ? '#c084fc' : 'var(--text-secondary)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Smartphone size={13} />
+              Yape / Plin
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('tarjeta')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                padding: '0.45rem',
+                fontSize: '0.75rem',
+                fontWeight: 650,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: paymentMethod === 'tarjeta' ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255,255,255,0.01)',
+                border: paymentMethod === 'tarjeta' ? '1px solid #6366f1' : '1px solid rgba(255,255,255,0.04)',
+                color: paymentMethod === 'tarjeta' ? '#818cf8' : 'var(--text-secondary)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <CreditCard size={13} />
+              Tarjeta
+            </button>
+          </div>
         </div>
       </div>
 

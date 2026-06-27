@@ -20,12 +20,14 @@ import {
   Search, 
   Calendar, 
   Menu, 
-  Plus 
+  Plus,
+  Barcode
 } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [notifications, setNotifications] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const addNotification = (message, type = 'success') => {
     const id = Date.now();
@@ -42,9 +44,9 @@ export default function App() {
       case 'dashboard':
         return <Dashboard setActiveTab={setActiveTab} />;
       case 'pos':
-        return <POS addNotification={addNotification} />;
+        return <POS searchQuery={searchQuery} setSearchQuery={setSearchQuery} addNotification={addNotification} />;
       case 'inventory':
-        return <Inventory addNotification={addNotification} />;
+        return <Inventory searchQuery={searchQuery} setSearchQuery={setSearchQuery} addNotification={addNotification} />;
       case 'suppliers':
         return <SuppliersCategories addNotification={addNotification} />;
       case 'history':
@@ -208,12 +210,15 @@ export default function App() {
           {/* Search bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexGrow: 1, maxWidth: '420px' }}>
             <Menu size={18} style={{ color: 'var(--text-secondary)', cursor: 'pointer' }} />
-            <div style={{ position: 'relative', width: '100%' }}>
-              <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
+              <Barcode size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} />
               <input 
+                id="global-search-input"
                 type="text" 
                 className="form-input" 
-                placeholder="Buscar productos, clientes, ventas..."
+                placeholder="Escanear código o buscar producto..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ 
                   paddingLeft: '2.1rem', 
                   paddingRight: '3.2rem', 
@@ -236,7 +241,7 @@ export default function App() {
                 borderRadius: '4px',
                 fontFamily: 'monospace'
               }}>Ctrl + K</span>
-            </div>
+            </form>
           </div>
           
           {/* Header Controls */}
