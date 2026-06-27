@@ -91,7 +91,7 @@ export default function App() {
   return (
     <div className="app-container">
       {/* Sidebar Navigation */}
-      <aside className="sidebar" style={{ width: '235px' }}>
+      <aside className="sidebar">
         <div className="brand-section" style={{ marginBottom: '1.5rem', gap: '0.75rem' }}>
           <div className="brand-icon" style={{ borderRadius: '12px', background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)', width: '38px', height: '38px', padding: 0 }}>
             {/* Outline Shop Icon with Gear (SVG) */}

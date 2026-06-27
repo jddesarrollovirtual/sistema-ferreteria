@@ -240,7 +240,7 @@ export default function Dashboard({ setActiveTab }) {
           </div>
         </div>
       )}      {/* Greeting and Goal Tracker Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.15rem', marginBottom: '1.15rem', flexShrink: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.15rem', marginBottom: '1.15rem', flexShrink: 0 }}>
         {/* Welcome card */}
         <div className="glass-panel" style={{ 
           padding: '1.25rem 1.5rem', 
