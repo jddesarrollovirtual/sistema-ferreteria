@@ -17,7 +17,8 @@ import {
   X,
   Keyboard,
   Coins,
-  Camera
+  Camera,
+  ChevronDown
 } from 'lucide-react';
 
 export const getProductImage = (name) => {
