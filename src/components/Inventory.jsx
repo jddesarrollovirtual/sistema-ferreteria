@@ -26,12 +26,14 @@ import {
 } from 'lucide-react';
 import { getProductImage } from './POS';
 
-export default function Inventory({ addNotification }) {
+export default function Inventory({ searchQuery: propSearchQuery, setSearchQuery: propSetSearchQuery, addNotification }) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   
-  const [searchQuery, setSearchQuery] = useState('');
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const searchQuery = propSearchQuery !== undefined ? propSearchQuery : localSearchQuery;
+  const setSearchQuery = propSetSearchQuery !== undefined ? propSetSearchQuery : setLocalSearchQuery;
   const [selectedCategory, setSelectedCategory] = useState('');
   const [activeTab, setActiveTab] = useState('todos');
   const [currentPage, setCurrentPage] = useState(1);
@@ -57,6 +59,12 @@ export default function Inventory({ addNotification }) {
   useEffect(() => {
     fetchInitialData();
   }, []);
+
+  useEffect(() => {
+    const handleOpenModal = () => openAddModal();
+    window.addEventListener('open-add-product-modal', handleOpenModal);
+    return () => window.removeEventListener('open-add-product-modal', handleOpenModal);
+  }, [categories, suppliers]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -438,118 +446,7 @@ export default function Inventory({ addNotification }) {
         </div>
       </div>
 
-      {/* Mockup-style Top Toolbar Search & Header Actions */}
-      <div className="glass-panel" style={{ display: 'flex', flexDirection: 'row', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center', padding: '1rem' }}>
-        {/* Search bar */}
-        <div style={{ position: 'relative', flexGrow: 1, minWidth: '240px', maxWidth: '450px' }}>
-          <Search 
-            size={18} 
-            style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} 
-          />
-          <input 
-            type="text" 
-            className="form-input" 
-            placeholder="Buscar productos por código, nombre o categoría..." 
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            style={{ paddingLeft: '2.5rem', borderRadius: '8px', height: '38px', fontSize: '0.82rem' }}
-          />
-        </div>
 
-        {/* Filters button dropdown */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button 
-            type="button" 
-            className="btn btn-secondary" 
-            style={{ padding: '0.5rem 1rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.45rem', borderRadius: '8px', height: '38px' }}
-            onClick={() => addNotification('Filtros avanzados en desarrollo.', 'primary')}
-          >
-            <Filter size={15} /> Filtros
-          </button>
-        </div>
-
-        {/* Date picker display */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div 
-            style={{ 
-              background: 'rgba(255,255,255,0.02)', 
-              border: '1px solid rgba(255,255,255,0.04)', 
-              borderRadius: '8px', 
-              padding: '0.5rem 0.85rem', 
-              fontSize: '0.82rem', 
-              color: '#fff', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.45rem',
-              height: '38px' 
-            }}
-          >
-            <Calendar size={15} className="text-secondary" />
-            <span>27 Jun 2026</span>
-          </div>
-        </div>
-
-        {/* Bell notifications */}
-        <div 
-          style={{ 
-            position: 'relative', 
-            cursor: 'pointer', 
-            width: '38px', 
-            height: '38px', 
-            borderRadius: '8px', 
-            background: 'rgba(255,255,255,0.02)', 
-            border: '1px solid rgba(255,255,255,0.04)', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            marginLeft: 'auto'
-          }}
-          onClick={() => addNotification('Tiene 3 alertas de stock bajo.', 'warning')}
-        >
-          <AlertTriangle size={17} style={{ color: 'var(--text-secondary)' }} />
-          <span 
-            style={{ 
-              position: 'absolute', 
-              top: '-3px', 
-              right: '-3px', 
-              width: '15px', 
-              height: '15px', 
-              borderRadius: '50%', 
-              background: 'var(--danger)', 
-              color: '#fff', 
-              fontSize: '0.62rem', 
-              fontWeight: 800, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center' 
-            }}
-          >
-            3
-          </span>
-        </div>
-
-        {/* Add Product main button */}
-        <button 
-          className="btn btn-primary" 
-          onClick={openAddModal}
-          style={{ 
-            padding: '0.5rem 1.15rem', 
-            fontSize: '0.82rem', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.35rem', 
-            borderRadius: '8px', 
-            background: 'linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)', 
-            border: 'none',
-            height: '38px' 
-          }}
-        >
-          <Plus size={16} /> Agregar Producto
-        </button>
-      </div>
 
       {/* Stat Cards Row */}
       <div className="grid-5" style={{ marginBottom: '1.5rem', gap: '0.85rem' }}>

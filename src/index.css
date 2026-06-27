@@ -1231,3 +1231,28 @@ body {
   50% { top: 85%; }
   100% { top: 15%; }
 }
+
+/* Grid helper utilities */
+.grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 1200px) {
+  .grid-5 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-5 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-5 {
+    grid-template-columns: 1fr;
+  }
+}

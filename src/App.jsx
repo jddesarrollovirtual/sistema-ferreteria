@@ -208,7 +208,7 @@ export default function App() {
           zIndex: 90
         }}>
           {/* Search bar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexGrow: 1, maxWidth: '420px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexGrow: 1, maxWidth: '520px' }}>
             <Menu size={18} style={{ color: 'var(--text-secondary)', cursor: 'pointer' }} />
             {activeTab === 'pos' && (
               <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', width: '100%' }}>
@@ -243,6 +243,38 @@ export default function App() {
                   fontFamily: 'monospace'
                 }}>Ctrl + K</span>
               </form>
+            )}
+            {activeTab === 'inventory' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', width: '100%' }}>
+                <form onSubmit={(e) => e.preventDefault()} style={{ position: 'relative', flexGrow: 1 }}>
+                  <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input 
+                    id="global-search-input"
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Buscar productos por código, nombre o categoría..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{ 
+                      paddingLeft: '2.1rem', 
+                      height: '34px', 
+                      fontSize: '0.78rem',
+                      background: 'rgba(255,255,255,0.02)',
+                      borderColor: 'rgba(255,255,255,0.04)',
+                      borderRadius: '8px'
+                    }} 
+                  />
+                </form>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  style={{ height: '34px', padding: '0 0.75rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.35rem', borderRadius: '8px' }}
+                  onClick={() => addNotification('Filtros avanzados en desarrollo.', 'primary')}
+                >
+                  <Filter size={13} />
+                  <span>Filtros</span>
+                </button>
+              </div>
             )}
           </div>
           
@@ -292,24 +324,47 @@ export default function App() {
               }}>3</span>
             </div>
             
-            <button 
-              className="btn btn-primary"
-              onClick={() => setActiveTab('pos')}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.4rem', 
-                padding: '0.45rem 0.85rem', 
-                fontSize: '0.78rem', 
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
-                border: 'none',
-                boxShadow: '0 4px 10px rgba(99, 102, 241, 0.2)'
-              }}
-            >
-              <Plus size={14} />
-              <span>Nueva Venta</span>
-            </button>
+            {activeTab === 'inventory' ? (
+              <button 
+                type="button"
+                className="btn btn-primary"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-add-product-modal'))}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.4rem', 
+                  padding: '0.45rem 0.85rem', 
+                  fontSize: '0.78rem', 
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%)',
+                  border: 'none',
+                  boxShadow: '0 4px 10px rgba(59, 130, 246, 0.2)'
+                }}
+              >
+                <Plus size={14} />
+                <span>Agregar Producto</span>
+              </button>
+            ) : (
+              <button 
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setActiveTab('pos')}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.4rem', 
+                  padding: '0.45rem 0.85rem', 
+                  fontSize: '0.78rem', 
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
+                  border: 'none',
+                  boxShadow: '0 4px 10px rgba(99, 102, 241, 0.2)'
+                }}
+              >
+                <Plus size={14} />
+                <span>Nueva Venta</span>
+              </button>
+            )}
           </div>
         </header>
 
