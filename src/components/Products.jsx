@@ -54,6 +54,19 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [drawerTab, setDrawerTab] = useState('info');
 
+  // Checkbox tracking list for operations (Labels, delete etc)
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+
+  // Import Modal & Labels Modal State
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [labelsModalOpen, setLabelsModalOpen] = useState(false);
+
+  // Labels Printer Settings
+  const [labelType, setLabelType] = useState('both'); // 'barcode', 'qr', 'price', 'both'
+  const [labelSize, setLabelSize] = useState('50x25'); // '50x25', '100x50', '38x25'
+  const [labelQty, setLabelQty] = useState(1);
+  const [labelPrinter, setLabelPrinter] = useState('Zebra ZD420 (Térmica USB)');
+
   // CRUD Modal Form State
   const [modalOpen, setModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
@@ -73,6 +86,148 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
   const [formTax, setFormTax] = useState('18%');
   const [formUnit, setFormUnit] = useState('Unidad');
   const [formStatus, setFormStatus] = useState('Activo');
+
+  const handleToggleSelectProduct = (prodId, e) => {
+    if (e) e.stopPropagation();
+    setSelectedProductIds(prev => 
+      prev.includes(prodId) ? prev.filter(id => id !== prodId) : [...prev, prodId]
+    );
+  };
+
+  const handleToggleSelectAll = () => {
+    const visibleIds = paginatedProducts.map(p => p.id);
+    const allVisibleSelected = visibleIds.every(id => selectedProductIds.includes(id));
+    
+    if (allVisibleSelected) {
+      setSelectedProductIds(prev => prev.filter(id => !visibleIds.includes(id)));
+    } else {
+      setSelectedProductIds(prev => [...new Set([...prev, ...visibleIds])]);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (products.length === 0) {
+      addNotification('No hay productos para exportar.', 'warning');
+      return;
+    }
+
+    const headers = ['barcode', 'name', 'description', 'cost_price', 'sale_price', 'category', 'brand', 'unit', 'tax'];
+    const rows = products.map(p => [
+      p.barcode || '',
+      p.name,
+      p.description || '',
+      p.cost_price || 0.0,
+      p.sale_price,
+      p.categories?.name || 'General',
+      p.brand || 'Stanley',
+      p.unit || 'Unidad',
+      p.tax || '18%'
+    ]);
+
+    const csvContent = [
+      headers.join(','), 
+      ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `catalogo_productos_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    addNotification('Catálogo exportado exitosamente en formato CSV.', 'success');
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target.result;
+      const rows = text.split('\n').map(row => row.trim().split(','));
+      if (rows.length < 2) {
+        addNotification('El archivo CSV seleccionado está vacío.', 'warning');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const headers = rows[0].map(h => h.toLowerCase().trim().replace(/^"|"$/g, ''));
+        const importedData = [];
+
+        for (let i = 1; i < rows.length; i++) {
+          const cols = rows[i].map(c => c.replace(/^"|"$/g, ''));
+          if (cols.length < 2 || !cols[1]) continue; // Skip empty/invalid rows
+
+          const item = {};
+          headers.forEach((header, colIdx) => {
+            item[header] = cols[colIdx] || '';
+          });
+
+          const catName = item.category || 'Herramientas';
+          const matchedCat = categories.find(c => c.name.toLowerCase() === catName.toLowerCase()) || categories[0];
+          const matchedSup = suppliers[0];
+
+          const payload = {
+            barcode: item.barcode || null,
+            name: item.name,
+            description: item.description || null,
+            category_id: matchedCat?.id || null,
+            supplier_id: matchedSup?.id || null,
+            cost_price: Number(item.cost_price) || 0.0,
+            sale_price: Number(item.sale_price) || 0.0,
+            stock: 10,
+            min_stock: 5,
+            image_url: null,
+          };
+
+          let newId = Date.now() + i;
+
+          if (!dbError) {
+            const { data, error } = await supabase
+              .from('products')
+              .insert([payload])
+              .select();
+            if (!error && data) newId = data[0].id;
+          }
+
+          // Save ERP metadata
+          const erpMetadata = JSON.parse(localStorage.getItem('ferre_product_erp_metadata') || '{}');
+          erpMetadata[newId] = {
+            brand: item.brand || 'Stanley',
+            tax: item.tax || '18%',
+            unit: item.unit || 'Unidad',
+            status: 'Activo'
+          };
+          localStorage.setItem('ferre_product_erp_metadata', JSON.stringify(erpMetadata));
+
+          importedData.push({
+            id: newId,
+            ...payload,
+            brand: item.brand || 'Stanley',
+            tax: item.tax || '18%',
+            unit: item.unit || 'Unidad',
+            status: 'Activo',
+            categories: matchedCat ? { name: matchedCat.name } : null,
+            suppliers: matchedSup ? { name: matchedSup.name } : null
+          });
+        }
+
+        setProducts(prev => [...importedData, ...prev]);
+        addNotification(`Importación completada: ${importedData.length} productos agregados al catálogo.`, 'success');
+        setImportModalOpen(false);
+      } catch (err) {
+        console.error(err);
+        addNotification('Error al importar el catálogo CSV.', 'danger');
+      } finally {
+        setLoading(false);
+      }
+    };
+    reader.readAsText(file);
+  };
 
   useEffect(() => {
     fetchInitialData();
@@ -546,7 +701,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
               type="button" 
               className="btn btn-secondary" 
               style={{ padding: '0.5rem 0.85rem', fontSize: '0.8rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-              onClick={() => addNotification('Importación de catálogo en cola.', 'primary')}
+              onClick={() => setImportModalOpen(true)}
             >
               <Upload size={13} /> Importar
             </button>
@@ -554,7 +709,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
               type="button" 
               className="btn btn-secondary" 
               style={{ padding: '0.5rem 0.85rem', fontSize: '0.8rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-              onClick={() => addNotification('Exportación a excel completada.', 'success')}
+              onClick={handleExportCSV}
             >
               <Download size={13} /> Exportar
             </button>
@@ -562,7 +717,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
               type="button" 
               className="btn btn-secondary" 
               style={{ padding: '0.5rem 0.85rem', fontSize: '0.8rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-              onClick={() => addNotification('Impresión de etiquetas enviada a cola.', 'primary')}
+              onClick={() => setLabelsModalOpen(true)}
             >
               <Printer size={13} /> Etiquetas
             </button>
@@ -656,7 +811,12 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
               <thead>
                 <tr>
                   <th style={{ width: '40px', textAlign: 'center' }}>
-                    <input type="checkbox" style={{ accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                    <input 
+                      type="checkbox" 
+                      style={{ accentColor: 'var(--primary)', cursor: 'pointer' }} 
+                      checked={paginatedProducts.length > 0 && paginatedProducts.every(p => selectedProductIds.includes(p.id))}
+                      onChange={handleToggleSelectAll}
+                    />
                   </th>
                   <th>PRODUCTO</th>
                   <th>CÓDIGO</th>
@@ -678,7 +838,12 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
                       style={{ cursor: 'pointer', background: selectedProduct?.id === prod.id ? 'rgba(99, 102, 241, 0.05)' : 'none' }}
                     >
                       <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                        <input type="checkbox" style={{ accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                        <input 
+                          type="checkbox" 
+                          style={{ accentColor: 'var(--primary)', cursor: 'pointer' }} 
+                          checked={selectedProductIds.includes(prod.id)}
+                          onChange={(e) => handleToggleSelectProduct(prod.id, e)}
+                        />
                       </td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -1309,6 +1474,330 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
           </div>
         </div>
       )}
+
+      {/* Import Catalog CSV Modal */}
+      {importModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-panel" style={{ maxWidth: '450px', width: '100%', background: 'var(--bg-surface-solid)', padding: '1.5rem' }}>
+            <div className="modal-header" style={{ marginBottom: '1.25rem' }}>
+              <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>Importar Catálogo (Excel/CSV)</span>
+              <button 
+                type="button"
+                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '1.5rem' }}
+                onClick={() => setImportModalOpen(false)}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Suba un archivo CSV con las columnas correspondientes a su catálogo de productos. El sistema creará los registros automáticamente.
+              </p>
+              
+              <div 
+                style={{ 
+                  background: 'rgba(255,255,255,0.01)', 
+                  border: '1px dashed rgba(255,255,255,0.15)', 
+                  borderRadius: '10px', 
+                  padding: '2rem', 
+                  textAlign: 'center', 
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onClick={() => document.getElementById('csv-file-import').click()}
+              >
+                <Upload size={32} style={{ color: 'var(--primary)', marginBottom: '0.5rem', opacity: 0.8 }} />
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff' }}>Arrastre o seleccione su archivo CSV</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Formato compatible: UTF-8 CSV</div>
+                <input 
+                  id="csv-file-import"
+                  type="file" 
+                  accept=".csv" 
+                  style={{ display: 'none' }} 
+                  onChange={handleImportCSV} 
+                />
+              </div>
+
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem' }}>Estructura de Columnas Requerida:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontFamily: 'monospace', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+                  barcode, name, description, cost_price, sale_price, category, brand, unit, tax
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  style={{ flex: 1, borderRadius: '8px', fontSize: '0.8rem' }}
+                  onClick={() => {
+                    const headers = ['barcode', 'name', 'description', 'cost_price', 'sale_price', 'category', 'brand', 'unit', 'tax'];
+                    const row1 = ['77510203040', 'Martillo Stanley 16oz', 'Martillo uña curva profesional', '18.00', '25.00', 'Herramientas', 'Stanley', 'Unidad', '18%'];
+                    const csvContent = [headers.join(','), row1.join(',')].join('\n');
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "plantilla_importacion_productos.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    addNotification('Plantilla de importación descargada.', 'success');
+                  }}
+                >
+                  Descargar Plantilla
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  style={{ flex: 1, borderRadius: '8px', fontSize: '0.8rem' }}
+                  onClick={() => setImportModalOpen(false)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print Labels Thermal Simulator Modal */}
+      {labelsModalOpen && (() => {
+        const selectedProductsForLabels = products.filter(p => selectedProductIds.includes(p.id));
+        const targetLabelProduct = selectedProductsForLabels.length > 0 
+          ? selectedProductsForLabels[0] 
+          : products[0] || { name: 'Ej. Martillo Stanley 16oz', barcode: '77510203040', sale_price: 25.00, brand: 'Stanley', unit: 'Unidad' };
+
+        const handlePrintLabels = () => {
+          addNotification(`Enviando ${labelQty} etiqueta(s) a la impresora ${labelPrinter}...`, 'success');
+          const printWin = window.open('', '_blank');
+          if (!printWin) {
+            addNotification('Habilite las ventanas emergentes para proceder a la impresión.', 'warning');
+            return;
+          }
+          
+          const labelsHTML = Array.from({ length: labelQty }).map(() => `
+            <div class="label-sticker size-${labelSize}">
+              <div class="header">FerrePro ERP - Catálogo</div>
+              <div class="name">${targetLabelProduct.name}</div>
+              <div class="brand">${targetLabelProduct.brand || 'Stanley'} - ${targetLabelProduct.unit || 'Unidad'}</div>
+              
+              ${(labelType === 'barcode' || labelType === 'both') ? `
+                <div class="barcode">
+                  <div class="bars"></div>
+                  <div class="code">${targetLabelProduct.barcode || '77510203040'}</div>
+                </div>
+              ` : ''}
+
+              ${(labelType === 'qr' || labelType === 'both') ? `
+                <div class="qr-block">
+                  <div style="font-size: 8px; font-weight: bold; border: 1px solid black; width: 45px; height: 45px; margin: auto; display: flex; align-items: center; justify-content: center; background: repeating-conic-gradient(black 0% 25%, white 0% 50%) 50% / 5px 5px;"></div>
+                  <div class="code" style="margin-top: 4px;">QR: ${targetLabelProduct.barcode || '77510203040'}</div>
+                </div>
+              ` : ''}
+
+              <div class="price">S/ ${Number(targetLabelProduct.sale_price).toFixed(2)}</div>
+            </div>
+          `).join('');
+
+          printWin.document.write(`
+            <html>
+              <head>
+                <title>Imprimir Etiquetas FerrePro ERP</title>
+                <style>
+                  body { margin: 0; padding: 20px; font-family: 'Courier New', monospace; display: flex; flex-wrap: wrap; gap: 12px; background: white; color: black; }
+                  .label-sticker { border: 1px dashed black; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; border-radius: 4px; box-sizing: border-box; background: white; }
+                  .size-50x25 { width: 189px; height: 94px; }
+                  .size-100x50 { width: 378px; height: 189px; font-size: 1.25rem; }
+                  .size-38x25 { width: 143px; height: 94px; font-size: 0.8rem; }
+                  .header { font-size: 8px; font-weight: bold; border-bottom: 1px solid black; padding-bottom: 2px; text-transform: uppercase; text-align: center; }
+                  .name { font-size: 11px; font-weight: bold; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                  .brand { font-size: 8.5px; margin-bottom: 4px; color: #555; }
+                  .barcode { display: flex; flex-direction: column; align-items: center; margin: 4px 0; }
+                  .bars { width: 90%; height: 22px; background: repeating-linear-gradient(90deg, black, black 2px, white 2px, white 5px); }
+                  .code { font-size: 8px; margin-top: 2px; letter-spacing: 1px; }
+                  .qr-block { text-align: center; margin: 4px 0; }
+                  .price { font-size: 13px; font-weight: bold; text-align: right; border-top: 1px solid black; padding-top: 3px; }
+                  @media print {
+                    body { padding: 0; }
+                    .label-sticker { page-break-inside: avoid; border: 1px solid black; }
+                  }
+                </style>
+              </head>
+              <body onload="window.print(); window.close();">
+                ${labelsHTML}
+              </body>
+            </html>
+          `);
+          printWin.document.close();
+        };
+
+        return (
+          <div className="modal-overlay">
+            <div className="modal-content glass-panel" style={{ maxWidth: '780px', width: '100%', background: 'var(--bg-surface-solid)', padding: '1.75rem' }}>
+              <div className="modal-header" style={{ marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.65rem' }}>
+                <span style={{ fontWeight: 800, fontSize: '1.15rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <Printer size={18} className="text-secondary" />
+                  Impresión de Etiquetas de Código de Barras / Precios
+                </span>
+                <button 
+                  type="button"
+                  style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '1.5rem' }}
+                  onClick={() => setLabelsModalOpen(false)}
+                >
+                  &times;
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }}>
+                
+                {/* Configuration Panel */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  
+                  {selectedProductsForLabels.length > 0 ? (
+                    <div style={{ background: 'rgba(99, 102, 241, 0.05)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 700 }}>
+                        ✓ {selectedProductsForLabels.length} producto(s) seleccionados de la tabla:
+                      </span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.45rem', maxHeight: '70px', overflowY: 'auto' }}>
+                        {selectedProductsForLabels.map(p => (
+                          <span key={p.id} style={{ fontSize: '0.68rem', padding: '0.15rem 0.45rem', background: 'rgba(255,255,255,0.04)', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.06)', color: '#fff' }}>
+                            {p.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      No seleccionó productos de la tabla. Se generará una etiqueta de muestra para: <strong>{targetLabelProduct.name}</strong>.
+                    </div>
+                  )}
+
+                  <div className="grid-2" style={{ gap: '0.85rem' }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 650 }}>Tipo de Etiqueta</label>
+                      <select className="form-select" value={labelType} onChange={(e) => setLabelType(e.target.value)}>
+                        <option value="both">Precio + Código de Barras</option>
+                        <option value="barcode">Sólo Código de Barras</option>
+                        <option value="qr">Precio + Código QR</option>
+                        <option value="price">Sólo Precio de Venta</option>
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 650 }}>Tamaño de Etiqueta</label>
+                      <select className="form-select" value={labelSize} onChange={(e) => setLabelSize(e.target.value)}>
+                        <option value="50x25">50 x 25 mm (Estándar Góndola)</option>
+                        <option value="100x50">100 x 50 mm (Grande Embalaje)</option>
+                        <option value="38x25">38 x 25 mm (Joyería / Pequeña)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid-2" style={{ gap: '0.85rem' }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 650 }}>Cantidad de Copias</label>
+                      <input 
+                        type="number" 
+                        min="1" 
+                        max="100" 
+                        className="form-input" 
+                        value={labelQty} 
+                        onChange={(e) => setLabelQty(Math.max(1, Number(e.target.value)))} 
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 650 }}>Impresora Térmica</label>
+                      <select className="form-select" value={labelPrinter} onChange={(e) => setLabelPrinter(e.target.value)}>
+                        <option value="Zebra ZD420 (Térmica USB)">Zebra ZD420 (USB LPT)</option>
+                        <option value="TSC TE200 (Red Ethernet)">TSC TE200 (IP 192.168.1.55)</option>
+                        <option value="Brother QL-800 (P-touch)">Brother QL-800 (P-touch)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="modal-actions" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem', gap: '0.5rem' }}>
+                    <button type="button" className="btn btn-secondary" style={{ borderRadius: '8px', flex: 1, fontSize: '0.82rem' }} onClick={() => setLabelsModalOpen(false)}>
+                      Cancelar
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-primary" 
+                      style={{ borderRadius: '8px', flex: 1.5, background: 'linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)', border: 'none', fontSize: '0.82rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }} 
+                      onClick={handlePrintLabels}
+                    >
+                      <Printer size={14} /> Imprimir Etiquetas
+                    </button>
+                  </div>
+                </div>
+
+                {/* Live Sticker Preview Panel */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '1.5rem' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: '0.85rem', fontWeight: 650 }}>
+                    VISTA PREVIA DE ETIQUETA REAL (TÉRMICA):
+                  </span>
+                  
+                  {/* Sticker Graphic element */}
+                  <div 
+                    style={{ 
+                      background: '#ffffff', 
+                      color: '#000000', 
+                      padding: '12px', 
+                      borderRadius: '4px', 
+                      border: '1.5px dashed #000000', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      justifyContent: 'space-between',
+                      fontFamily: 'monospace',
+                      boxSizing: 'border-box',
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                      width: labelSize === '100x50' ? '280px' : labelSize === '38x25' ? '180px' : '220px',
+                      height: labelSize === '100x50' ? '140px' : '110px'
+                    }}
+                  >
+                    <div style={{ fontSize: '8px', fontWeight: 800, borderBottom: '1px solid #000', paddingBottom: '2px', textTransform: 'uppercase', textAlign: 'center', letterSpacing: '0.5px' }}>
+                      FerrePro ERP - Catálogo
+                    </div>
+
+                    <div style={{ fontSize: labelSize === '100x50' ? '12px' : '10px', fontWeight: 800, marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {targetLabelProduct.name}
+                    </div>
+
+                    <div style={{ fontSize: '8px', color: '#555', marginBottom: '2px' }}>
+                      {targetLabelProduct.brand || 'Stanley'} - {targetLabelProduct.unit || 'Unidad'}
+                    </div>
+
+                    {(labelType === 'barcode' || labelType === 'both') && (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignSelf: 'center', alignItems: 'center', width: '90%', margin: '4px 0' }}>
+                        <div style={{ width: '100%', height: '20px', background: 'repeating-linear-gradient(90deg, #000, #000 2px, #fff 2px, #fff 4px)' }}></div>
+                        <div style={{ fontSize: '8px', marginTop: '2px', letterSpacing: '1px' }}>{targetLabelProduct.barcode || '77510203040'}</div>
+                      </div>
+                    )}
+
+                    {(labelType === 'qr' || labelType === 'both') && (
+                      <div style={{ textAlign: 'center', margin: '4px 0' }}>
+                        <div style={{ width: '38px', height: '38px', border: '1px solid #000', margin: 'auto', background: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 4px 4px' }}></div>
+                        <div style={{ fontSize: '6.5px', marginTop: '2px' }}>QR: {targetLabelProduct.barcode || '77510203040'}</div>
+                      </div>
+                    )}
+
+                    <div style={{ fontSize: labelSize === '100x50' ? '14px' : '11px', fontWeight: 'bold', textAlign: 'right', borderTop: '1px solid #000', paddingTop: '2px' }}>
+                      S/ {Number(targetLabelProduct.sale_price || 25).toFixed(2)}
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.75rem', textAlign: 'center' }}>
+                    * El código de barras se genera utilizando simbología estándar Code128 / Código QR según el tipo elegido.
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
