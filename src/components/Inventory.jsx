@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Plus, Edit2, Trash2, Search, Filter, AlertTriangle, AlertCircle, PackageCheck } from 'lucide-react';
+import { getProductImage } from './POS';
 
 export default function Inventory({ addNotification }) {
   const [products, setProducts] = useState([]);
@@ -19,6 +20,7 @@ export default function Inventory({ addNotification }) {
   const [formBarcode, setFormBarcode] = useState('');
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
+  const [formImageUrl, setFormImageUrl] = useState('');
   const [formCategoryId, setFormCategoryId] = useState('');
   const [formSupplierId, setFormSupplierId] = useState('');
   const [formCostPrice, setFormCostPrice] = useState('');
@@ -58,12 +60,20 @@ export default function Inventory({ addNotification }) {
         .order('name');
 
       if (prodError) throw prodError;
-      setProducts(prodData || []);
+      
+      const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
+      const productsWithImages = (prodData || []).map((p) => ({
+        ...p,
+        image_url: localImages[p.id] || p.image_url || null
+      }));
+
+      setProducts(productsWithImages);
       setDbError(false);
     } catch (error) {
       console.error('Error fetching inventory data, fallback active:', error);
       setDbError(true);
 
+      const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
       // Mock Setup
       setCategories([
         { id: 1, name: 'Herramientas Manuales' },
@@ -75,13 +85,17 @@ export default function Inventory({ addNotification }) {
         { id: 1, name: 'Ferretería Central S.A.' },
         { id: 2, name: 'Distribuidora Eléctrica SAC' },
       ]);
-      setProducts([
+      const mockProducts = [
         { id: 1, barcode: '7750123456789', name: 'Martillo de Uña 16oz Bellota', stock: 15, min_stock: 5, cost_price: 18.00, sale_price: 25.00, description: 'Mango de fibra de vidrio', category_id: 1, categories: { name: 'Herramientas Manuales' }, suppliers: { name: 'Ferretería Central S.A.' } },
         { id: 2, barcode: '7750123456790', name: 'Alicate Universal 8" Tramontina', stock: 8, min_stock: 5, cost_price: 12.50, sale_price: 18.50, description: 'Acero forjado aislado', category_id: 1, categories: { name: 'Herramientas Manuales' }, suppliers: { name: 'Distribuidora Eléctrica SAC' } },
         { id: 3, barcode: '7750123456791', name: 'Llave Inglesa 10" Stanley', stock: 5, min_stock: 5, cost_price: 24.00, sale_price: 32.00, description: 'Cromada de alta resistencia', category_id: 1, categories: { name: 'Herramientas Manuales' }, suppliers: { name: 'Ferretería Central S.A.' } },
         { id: 4, barcode: '7750123456792', name: 'Foco LED 12W Luz Fría Philips', stock: 45, min_stock: 10, cost_price: 4.80, sale_price: 7.50, description: 'Ahorrador de energía', category_id: 2, categories: { name: 'Materiales Eléctricos' }, suppliers: { name: 'Distribuidora Eléctrica SAC' } },
         { id: 6, barcode: '7750123456794', name: 'Tubo de PVC 1/2" Pavco (3m)', stock: 2, min_stock: 10, cost_price: 6.00, sale_price: 8.90, description: 'Para agua fría roscable', category_id: 3, categories: { name: 'Plomería' }, suppliers: { name: 'Ferretería Central S.A.' } },
-      ]);
+      ].map(p => ({
+        ...p,
+        image_url: localImages[p.id] || null
+      }));
+      setProducts(mockProducts);
     } finally {
       setLoading(false);
     }
@@ -92,6 +106,7 @@ export default function Inventory({ addNotification }) {
     setFormBarcode('');
     setFormName('');
     setFormDescription('');
+    setFormImageUrl('');
     setFormCategoryId(categories[0]?.id || '');
     setFormSupplierId(suppliers[0]?.id || '');
     setFormCostPrice('');
@@ -106,6 +121,7 @@ export default function Inventory({ addNotification }) {
     setFormBarcode(product.barcode || '');
     setFormName(product.name || '');
     setFormDescription(product.description || '');
+    setFormImageUrl(product.image_url || '');
     setFormCategoryId(product.category_id || '');
     setFormSupplierId(product.supplier_id || '');
     setFormCostPrice(product.cost_price ? String(product.cost_price) : '');
@@ -132,6 +148,7 @@ export default function Inventory({ addNotification }) {
       sale_price: Number(formSalePrice),
       stock: Number(formStock),
       min_stock: Number(formMinStock),
+      image_url: formImageUrl || null,
     };
 
     setLoading(true);
@@ -139,22 +156,78 @@ export default function Inventory({ addNotification }) {
       if (dbError) throw new Error('Simulation Mode');
 
       if (editProduct) {
-        // Update
-        const { error } = await supabase
-          .from('products')
-          .update(payload)
-          .eq('id', editProduct.id);
-        
-        if (error) throw error;
-        addNotification('Producto actualizado con éxito.', 'success');
-      } else {
-        // Create
-        const { error } = await supabase
-          .from('products')
-          .insert([payload]);
+        // Try saving to Supabase (with image_url)
+        try {
+          const { error } = await supabase
+            .from('products')
+            .update(payload)
+            .eq('id', editProduct.id);
+          if (error) throw error;
 
-        if (error) throw error;
-        addNotification('Producto creado con éxito.', 'success');
+          // Sync locally as well
+          const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
+          if (formImageUrl) {
+            localImages[editProduct.id] = formImageUrl;
+          } else {
+            delete localImages[editProduct.id];
+          }
+          localStorage.setItem('ferre_product_images', JSON.stringify(localImages));
+          addNotification('Producto actualizado con éxito.', 'success');
+        } catch (dbErr) {
+          console.warn("Fallo al guardar image_url en DB. Guardando localmente y el resto en DB:", dbErr);
+          
+          // Remove image_url to prevent DB column errors
+          const { image_url, ...restPayload } = payload;
+          const { error } = await supabase
+            .from('products')
+            .update(restPayload)
+            .eq('id', editProduct.id);
+          if (error) throw error;
+
+          // Save image locally
+          const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
+          if (formImageUrl) {
+            localImages[editProduct.id] = formImageUrl;
+          } else {
+            delete localImages[editProduct.id];
+          }
+          localStorage.setItem('ferre_product_images', JSON.stringify(localImages));
+          addNotification('Producto actualizado (Imagen guardada localmente).', 'success');
+        }
+      } else {
+        // CREATE NEW PRODUCT
+        try {
+          const { data, error } = await supabase
+            .from('products')
+            .insert([payload])
+            .select();
+          if (error) throw error;
+
+          const newProd = data[0];
+          if (formImageUrl && newProd) {
+            const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
+            localImages[newProd.id] = formImageUrl;
+            localStorage.setItem('ferre_product_images', JSON.stringify(localImages));
+          }
+          addNotification('Producto creado con éxito.', 'success');
+        } catch (dbErr) {
+          console.warn("Fallo al crear con image_url. Guardando sin columna de imagen y guardando imagen local:", dbErr);
+          
+          const { image_url, ...restPayload } = payload;
+          const { data, error } = await supabase
+            .from('products')
+            .insert([restPayload])
+            .select();
+          if (error) throw error;
+
+          const newProd = data[0];
+          if (formImageUrl && newProd) {
+            const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
+            localImages[newProd.id] = formImageUrl;
+            localStorage.setItem('ferre_product_images', JSON.stringify(localImages));
+          }
+          addNotification('Producto creado (Imagen guardada localmente).', 'success');
+        }
       }
       setModalOpen(false);
       fetchInitialData();
@@ -163,9 +236,18 @@ export default function Inventory({ addNotification }) {
       
       const categoryObj = categories.find(c => c.id === Number(formCategoryId));
       const supplierObj = suppliers.find(s => s.id === Number(formSupplierId));
+      const tempId = editProduct ? editProduct.id : Date.now();
+
+      // Sync image locally in simulation
+      const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
+      if (formImageUrl) {
+        localImages[tempId] = formImageUrl;
+      } else {
+        delete localImages[tempId];
+      }
+      localStorage.setItem('ferre_product_images', JSON.stringify(localImages));
 
       if (editProduct) {
-        // Edit local state
         setProducts(
           products.map((p) =>
             p.id === editProduct.id
@@ -180,9 +262,8 @@ export default function Inventory({ addNotification }) {
         );
         addNotification('Producto actualizado (Simulado).', 'success');
       } else {
-        // Add locally
         const newProduct = {
-          id: Date.now(),
+          id: tempId,
           ...payload,
           categories: categoryObj ? { name: categoryObj.name } : null,
           suppliers: supplierObj ? { name: supplierObj.name } : null
@@ -310,8 +391,25 @@ export default function Inventory({ addNotification }) {
                         {prod.barcode || 'Sin Código'}
                       </td>
                       <td>
-                        <div style={{ fontWeight: 600 }}>{prod.name}</div>
-                        {prod.description && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{prod.description}</div>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                          <img 
+                            src={prod.image_url || getProductImage(prod.name)} 
+                            alt={prod.name} 
+                            style={{ 
+                              width: '36px', 
+                              height: '36px', 
+                              borderRadius: '6px', 
+                              objectFit: 'cover', 
+                              background: 'rgba(0,0,0,0.15)',
+                              border: '1px solid rgba(255,255,255,0.05)',
+                              flexShrink: 0 
+                            }} 
+                          />
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{prod.name}</div>
+                            {prod.description && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{prod.description}</div>}
+                          </div>
+                        </div>
                       </td>
                       <td>{prod.categories?.name || 'General'}</td>
                       <td>S/ {Number(prod.cost_price).toFixed(2)}</td>
@@ -397,7 +495,7 @@ export default function Inventory({ addNotification }) {
                 </div>
               </div>
 
-              <div className="form-group">
+               <div className="form-group">
                 <label className="form-label">Descripción</label>
                 <textarea 
                   className="form-input" 
@@ -405,6 +503,17 @@ export default function Inventory({ addNotification }) {
                   placeholder="Detalles del producto (opcional)..."
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">URL de la Imagen (Opcional)</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Ej. https://imagenes.com/mi-martillo.jpg" 
+                  value={formImageUrl} 
+                  onChange={(e) => setFormImageUrl(e.target.value)} 
                 />
               </div>
 

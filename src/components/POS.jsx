@@ -41,7 +41,7 @@ export const getProductImage = (name) => {
     return 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=150&auto=format&fit=crop&q=60';
   }
   if (lowerName.includes('pegamento') || lowerName.includes('oatey') || lowerName.includes('cola')) {
-    return 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=150&auto=format&fit=crop&q=60';
+    return 'https://images.unsplash.com/photo-1620912189866-474843ba5c14?w=150&auto=format&fit=crop&q=60';
   }
   if (lowerName.includes('pintura') || lowerName.includes('látex') || lowerName.includes('esmalte')) {
     return 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=150&auto=format&fit=crop&q=60';
@@ -235,14 +235,23 @@ export default function POS({ addNotification }) {
         .select('*, categories(name)')
         .order('name');
       if (error) throw error;
-      setProducts(data || []);
+
+      // Sync and merge local custom images
+      const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
+      const productsWithImages = (data || []).map((p) => ({
+        ...p,
+        image_url: localImages[p.id] || p.image_url || null
+      }));
+
+      setProducts(productsWithImages);
       setDbError(false);
     } catch (error) {
       console.error('Error fetching products:', error);
       setDbError(true);
       
+      const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
       // Fallback Mock products
-      setProducts([
+      const mockProducts = [
         { id: 1, barcode: '7750123456789', name: 'Martillo de Uña 16oz Bellota', stock: 15, sale_price: 25.00, description: 'Mango de fibra de vidrio', category_id: 1, categories: { name: 'Herramientas' } },
         { id: 2, barcode: '7750123456790', name: 'Alicate Universal 8" Tramontina', stock: 8, sale_price: 18.50, description: 'Acero forjado aislado', category_id: 1, categories: { name: 'Herramientas' } },
         { id: 3, barcode: '7750123456791', name: 'Llave Inglesa 10" Stanley', stock: 5, sale_price: 32.00, description: 'Cromada de alta resistencia', category_id: 1, categories: { name: 'Herramientas' } },
@@ -251,7 +260,11 @@ export default function POS({ addNotification }) {
         { id: 6, barcode: '7750123456794', name: 'Tubo de PVC 1/2" Pavco (3m)', stock: 2, sale_price: 8.90, description: 'Para agua fría roscable', category_id: 3, categories: { name: 'Plomería' } },
         { id: 7, barcode: '7750123456795', name: 'Pegamento PVC Oatey 1/4 Galón', stock: 12, sale_price: 45.00, description: 'Cerrado hermético secado rápido', category_id: 3, categories: { name: 'Plomería' } },
         { id: 8, barcode: '7750123456796', name: 'Pintura Látex Pato Blanco (Gal)', stock: 10, sale_price: 52.00, description: 'Pintura lavable interiores', category_id: 4, categories: { name: 'Pinturas' } },
-      ]);
+      ].map(p => ({
+        ...p,
+        image_url: localImages[p.id] || null
+      }));
+      setProducts(mockProducts);
     }
   };
 
