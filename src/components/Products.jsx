@@ -1577,31 +1577,36 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
             return;
           }
           
-          const labelsHTML = Array.from({ length: labelQty }).map(() => `
-            <div class="label-sticker size-${labelSize}">
-              <div class="header">FerrePro ERP - Catálogo</div>
-              <div class="name">${targetLabelProduct.name}</div>
-              <div class="brand">${targetLabelProduct.brand || 'Stanley'} - ${targetLabelProduct.unit || 'Unidad'}</div>
-              
-              ${(labelType === 'barcode' || labelType === 'both') ? `
-                <div class="barcode">
-                  <div class="bars"></div>
-                  <div class="code">${targetLabelProduct.barcode || '77510203040'}</div>
-                </div>
-              ` : ''}
+          const productListToPrint = selectedProductsForLabels.length > 0 ? selectedProductsForLabels : [targetLabelProduct];
+          const totalLabelsCount = productListToPrint.length * labelQty;
+          
+          const labelsHTML = productListToPrint.map(prod => {
+            return Array.from({ length: labelQty }).map(() => `
+              <div class="label-sticker size-${labelSize}">
+                <div class="header">FerrePro ERP - Catálogo</div>
+                <div class="name">${prod.name}</div>
+                <div class="brand">${prod.brand || 'Stanley'} - ${prod.unit || 'Unidad'}</div>
+                
+                ${(labelType === 'barcode' || labelType === 'both') ? `
+                  <div class="barcode">
+                    <div class="bars"></div>
+                    <div class="code">${prod.barcode || '77510203040'}</div>
+                  </div>
+                ` : ''}
 
-              ${(labelType === 'qr') ? `
-                <div class="qr-block">
-                  <div style="font-size: 8px; font-weight: bold; border: 1px solid black; width: 45px; height: 45px; margin: auto; display: flex; align-items: center; justify-content: center; background: repeating-conic-gradient(black 0% 25%, white 0% 50%) 50% / 5px 5px;"></div>
-                  <div class="code" style="margin-top: 4px;">QR: ${targetLabelProduct.barcode || '77510203040'}</div>
-                </div>
-              ` : ''}
+                ${(labelType === 'qr') ? `
+                  <div class="qr-block">
+                    <div style="font-size: 8px; font-weight: bold; border: 1px solid black; width: 45px; height: 45px; margin: auto; display: flex; align-items: center; justify-content: center; background: repeating-conic-gradient(black 0% 25%, white 0% 50%) 50% / 5px 5px;"></div>
+                    <div class="code" style="margin-top: 4px;">QR: ${prod.barcode || '77510203040'}</div>
+                  </div>
+                ` : ''}
 
-              ${(labelType !== 'barcode') ? `
-                <div class="price">S/ ${Number(targetLabelProduct.sale_price).toFixed(2)}</div>
-              ` : ''}
-            </div>
-          `).join('');
+                ${(labelType !== 'barcode') ? `
+                  <div class="price">S/ ${Number(prod.sale_price || 0).toFixed(2)}</div>
+                ` : ''}
+              </div>
+            `).join('');
+          }).join('');
 
           printWin.document.write(`
             <html>
