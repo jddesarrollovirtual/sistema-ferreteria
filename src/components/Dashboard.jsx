@@ -11,8 +11,7 @@ import {
   TrendingUp,
   Target,
   Award,
-  Clock,
-  Briefcase
+  Clock
 } from 'lucide-react';
 
 export default function Dashboard({ setActiveTab }) {
@@ -24,6 +23,8 @@ export default function Dashboard({ setActiveTab }) {
   });
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [recentSales, setRecentSales] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [paymentDistribution, setPaymentDistribution] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -63,6 +64,60 @@ export default function Dashboard({ setActiveTab }) {
       const totalSValue = sales ? sales.reduce((sum, sale) => sum + Number(sale.total), 0) : 0;
       const totalSCount = sales ? sales.length : 0;
 
+      // 3. Group payments dynamically from actual sales list
+      const payMethods = {
+        efectivo: 0,
+        tarjeta: 0,
+        yape_plin: 0,
+        transferencia: 0
+      };
+
+      if (sales) {
+        sales.forEach(sale => {
+          const method = sale.payment_method;
+          if (payMethods[method] !== undefined) {
+            payMethods[method] += Number(sale.total);
+          }
+        });
+      }
+
+      const paymentData = [
+        { method: 'Efectivo', pct: totalSValue > 0 ? Math.round((payMethods.efectivo / totalSValue) * 100) : 0, color: '#10b981', amount: `S/ ${payMethods.efectivo.toFixed(2)}` },
+        { method: 'Tarjeta', pct: totalSValue > 0 ? Math.round((payMethods.tarjeta / totalSValue) * 100) : 0, color: '#6366f1', amount: `S/ ${payMethods.tarjeta.toFixed(2)}` },
+        { method: 'Yape / Plin', pct: totalSValue > 0 ? Math.round((payMethods.yape_plin / totalSValue) * 100) : 0, color: '#a855f7', amount: `S/ ${payMethods.yape_plin.toFixed(2)}` },
+        { method: 'Transferencia', pct: totalSValue > 0 ? Math.round((payMethods.transferencia / totalSValue) * 100) : 0, color: '#f59e0b', amount: `S/ ${payMethods.transferencia.toFixed(2)}` }
+      ];
+
+      // 4. Get sale items to calculate real Top Selling Products
+      const { data: saleItems, error: itemsError } = await supabase
+        .from('sale_items')
+        .select('quantity, subtotal, products(name, stock)');
+
+      if (itemsError) throw itemsError;
+
+      const productMap = {};
+      if (saleItems) {
+        saleItems.forEach(item => {
+          const name = item.products?.name || 'Producto Eliminado';
+          const stock = item.products?.stock ?? 0;
+          if (!productMap[name]) {
+            productMap[name] = { name, sales: 0, stock, revenue: 0 };
+          }
+          productMap[name].sales += item.quantity;
+          productMap[name].revenue += Number(item.subtotal);
+        });
+      }
+
+      const topProductsData = Object.values(productMap)
+        .sort((a, b) => b.sales - a.sales)
+        .slice(0, 3)
+        .map(p => ({
+          name: p.name,
+          sales: p.sales,
+          stock: p.stock,
+          profit: `S/ ${p.revenue.toFixed(2)}`
+        }));
+
       setStats({
         totalSales: totalSValue,
         salesCount: totalSCount,
@@ -71,11 +126,13 @@ export default function Dashboard({ setActiveTab }) {
       });
       setLowStockProducts(lowStock.slice(0, 5));
       setRecentSales(sales ? sales.slice(0, 5) : []);
+      setPaymentDistribution(paymentData);
+      setTopProducts(topProductsData);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('Error fetching dashboard data, activating fallback simulation:', error);
       setDbError(true);
       
-      // Fallback with rich visual mock data
+      // Fallback with rich visual mock data (only in offline/error mode)
       setStats({
         totalSales: 1850.50,
         salesCount: 28,
@@ -92,6 +149,17 @@ export default function Dashboard({ setActiveTab }) {
         { id: 202, customer_name: 'María Delgado', total: 112.50, payment_method: 'yape_plin', created_at: new Date(Date.now() - 3600000).toISOString() },
         { id: 203, customer_name: 'Ferrete SAC', total: 320.00, payment_method: 'transferencia', created_at: new Date(Date.now() - 7200000).toISOString() },
         { id: 204, customer_name: 'Cliente General', total: 12.80, payment_method: 'tarjeta', created_at: new Date(Date.now() - 14400000).toISOString() },
+      ]);
+      setPaymentDistribution([
+        { method: 'Efectivo', pct: 45, color: '#10b981', amount: 'S/ 832.72' },
+        { method: 'Tarjeta', pct: 25, color: '#6366f1', amount: 'S/ 462.62' },
+        { method: 'Yape / Plin', pct: 20, color: '#a855f7', amount: 'S/ 370.10' },
+        { method: 'Transferencia', pct: 10, color: '#f59e0b', amount: 'S/ 185.06' },
+      ]);
+      setTopProducts([
+        { name: 'Foco LED 12W Philips', sales: 48, stock: 45, profit: 'S/ 360.00' },
+        { name: 'Cable Eléctrico Indeco Nro 12', sales: 35, stock: 100, profit: 'S/ 112.00' },
+        { name: 'Alicate Universal 8" Tramontina', sales: 18, stock: 8, profit: 'S/ 333.00' },
       ]);
     } finally {
       setLoading(false);
@@ -112,24 +180,8 @@ export default function Dashboard({ setActiveTab }) {
     return date.toLocaleDateString('es-ES', options);
   };
 
-  // Calculations for charts
   const salesGoal = 3000.00;
   const goalPercentage = Math.min(100, (stats.totalSales / salesGoal) * 100);
-
-  // Mock Top Selling Products
-  const topProducts = [
-    { name: 'Foco LED 12W Philips', sales: 48, stock: 45, profit: 'S/ 360.00' },
-    { name: 'Cable Eléctrico Indeco Nro 12', sales: 35, stock: 100, profit: 'S/ 112.00' },
-    { name: 'Alicate Universal 8" Tramontina', sales: 18, stock: 8, profit: 'S/ 333.00' },
-  ];
-
-  // Mock Payment Distribution (values in %)
-  const paymentDistribution = [
-    { method: 'Efectivo', pct: 45, color: '#10b981', amount: 'S/ 832.72' },
-    { method: 'Tarjeta', pct: 25, color: '#6366f1', amount: 'S/ 462.62' },
-    { method: 'Yape / Plin', pct: 20, color: '#a855f7', amount: 'S/ 370.10' },
-    { method: 'Transferencia', pct: 10, color: '#f59e0b', amount: 'S/ 185.06' },
-  ];
 
   return (
     <div className="dashboard-container">
@@ -263,7 +315,7 @@ export default function Dashboard({ setActiveTab }) {
             {loading ? (
               <p style={{ color: 'var(--text-secondary)' }}>Cargando datos...</p>
             ) : recentSales.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)' }}>No hay ventas registradas hoy.</p>
+              <p style={{ color: 'var(--text-secondary)', textAlign: 'center', margin: 'auto 0', padding: '2rem' }}>No hay ventas registradas.</p>
             ) : (
               <div className="table-container">
                 <table className="custom-table">
@@ -394,21 +446,27 @@ export default function Dashboard({ setActiveTab }) {
           </div>
 
           {/* Top Selling Products */}
-          <div className="glass-panel" style={{ flexShrink: 0, padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div className="glass-panel" style={{ minHeight: 0, padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
               <Award size={18} className="text-primary" /> Productos Más Vendidos
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {topProducts.map((p, idx) => (
-                <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', paddingBottom: '0.4rem', borderBottom: idx < topProducts.length - 1 ? '1px solid rgba(255,255,255,0.02)' : 'none' }}>
-                  <div>
-                    <p style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{idx + 1}. {p.name}</p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vendido: {p.sales} u. | Stock: {p.stock}</p>
+            {topProducts.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textAlign: 'center', padding: '1rem', margin: 'auto' }}>
+                No hay ventas registradas.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', overflowY: 'auto', flexGrow: 1 }}>
+                {topProducts.map((p, idx) => (
+                  <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', paddingBottom: '0.4rem', borderBottom: idx < topProducts.length - 1 ? '1px solid rgba(255,255,255,0.02)' : 'none' }}>
+                    <div style={{ maxWidth: '70%' }}>
+                      <p style={{ fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{idx + 1}. {p.name}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vendido: {p.sales} u. | Stock: {p.stock}</p>
+                    </div>
+                    <span style={{ fontWeight: 800, color: 'var(--success)' }}>{p.profit}</span>
                   </div>
-                  <span style={{ fontWeight: 800, color: 'var(--success)' }}>{p.profit}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Quick Actions */}
