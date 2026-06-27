@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { 
   Search, 
   ShoppingCart, 
@@ -63,7 +63,19 @@ export default function POS({ addNotification }) {
   useEffect(() => {
     if (cameraScannerOpen) {
       const timer = setTimeout(() => {
-        const html5QrCode = new Html5Qrcode("scanner-video-region");
+        // Instantiate reader with explicit barcode formats to focus the engine and optimize decoding CPU
+        const html5QrCode = new Html5Qrcode("scanner-video-region", {
+          verbose: false,
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.QR_CODE
+          ]
+        });
         html5QrCodeRef.current = html5QrCode;
         
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
@@ -89,9 +101,15 @@ export default function POS({ addNotification }) {
           }
         };
 
+        // Configuration requesting HD video constraints for capturing thin barcode lines
         const config = { 
-          fps: 15, 
-          qrbox: (width, height) => ({ width: Math.min(width * 0.85, 280), height: Math.min(height * 0.45, 110) }) 
+          fps: 20, 
+          qrbox: (width, height) => ({ width: Math.min(width * 0.85, 290), height: Math.min(height * 0.5, 110) }),
+          videoConstraints: {
+            width: { min: 640, ideal: 1280, max: 1920 },
+            height: { min: 480, ideal: 720, max: 1080 },
+            facingMode: "environment"
+          }
         };
 
         html5QrCode.start(
@@ -916,8 +934,8 @@ export default function POS({ addNotification }) {
       {/* Camera Barcode Scanner Modal */}
       {cameraScannerOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-panel" style={{ maxWidth: '380px', padding: '1.25rem', background: 'var(--bg-surface-solid)' }}>
-            <div className="modal-header" style={{ marginBottom: '1rem' }}>
+          <div className="modal-content glass-panel" style={{ maxWidth: '400px', padding: '1.25rem', background: 'var(--bg-surface-solid)' }}>
+            <div className="modal-header" style={{ marginBottom: '0.85rem' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                 <Camera className="text-primary" size={20} /> Escáner de Código
               </span>
@@ -929,20 +947,27 @@ export default function POS({ addNotification }) {
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', margin: 0 }}>
-                Enfoque el código de barras del producto con la cámara de su dispositivo.
-              </p>
-
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center' }}>
               <div className="scanner-container-relative">
                 {/* Laser Overlay animation */}
                 <div className="scanner-laser" />
                 <div id="scanner-video-region" />
               </div>
 
+              {/* Tips for cashiers */}
+              <div style={{ width: '100%', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '0.75rem', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                <strong style={{ color: 'var(--warning)', display: 'block', marginBottom: '0.25rem' }}>💡 Consejos de lectura:</strong>
+                <ul style={{ margin: 0, paddingLeft: '1.1rem', lineHeight: '1.4' }}>
+                  <li>Mantenga el código a unos <strong>15-20 cm</strong> de la cámara.</li>
+                  <li>Evite reflejos de luz directa sobre el empaque del producto.</li>
+                  <li>Las webcams fijas de laptops no tienen enfoque automático. Si se ve borroso, aleje el producto lentamente.</li>
+                  <li>Para mayor velocidad y precisión, se recomienda usar un lector USB (pistola), ya soportado en el buscador.</li>
+                </ul>
+              </div>
+
               <button 
                 className="btn btn-secondary" 
-                style={{ width: '100%', borderRadius: '10px', marginTop: '0.5rem' }}
+                style={{ width: '100%', borderRadius: '10px', marginTop: '0.25rem' }}
                 onClick={() => setCameraScannerOpen(false)}
               >
                 Detener Cámara
