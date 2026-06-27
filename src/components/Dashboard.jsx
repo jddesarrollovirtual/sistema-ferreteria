@@ -383,21 +383,13 @@ export default function Dashboard({ setActiveTab }) {
         <div className="dashboard-right">
           <div className="glass-panel" style={{ height: '100%', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: 'hidden' }}>
             
-            {/* Section 1: Stock Alerts (Scrollable list with pulsing dots) */}
-            <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flexGrow: 1 }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem', flexShrink: 0 }}>
-                <AlertTriangle className="text-warning" size={18} />
-                Alertas de Stock
-              </h2>
-
-              {loading ? (
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Cargando alertas...</p>
-              ) : lowStockProducts.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--success)', margin: 'auto' }}>
-                  <p style={{ fontWeight: 700, fontSize: '0.9rem' }}>¡Inventario Completo!</p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Sin productos con bajo stock.</p>
-                </div>
-              ) : (
+            {/* Section 1: Stock Alerts (Only visible if there are low stock products) */}
+            {lowStockProducts.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flexGrow: 1, borderBottom: '1px solid var(--border-color)', paddingBottom: '1.25rem' }}>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem', flexShrink: 0 }}>
+                  <AlertTriangle className="text-warning" size={18} />
+                  Alertas de Stock
+                </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', overflowY: 'auto', paddingRight: '0.15rem' }}>
                   {lowStockProducts.map((prod) => {
                     const ratio = Math.min(100, (prod.stock / prod.min_stock) * 100);
@@ -444,21 +436,21 @@ export default function Dashboard({ setActiveTab }) {
                     );
                   })}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Section 2: Top Selling Products (Premium Rank Badges) */}
-            <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.85rem' }}>
+            {/* Section 2: Top Selling Products (Premium Rank Badges, expands dynamically) */}
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flexGrow: 1 }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.85rem', flexShrink: 0 }}>
                 <Award size={18} className="text-primary" /> Productos Más Vendidos
               </h3>
               
               {topProducts.length === 0 ? (
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textAlign: 'center', padding: '0.5rem' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textAlign: 'center', padding: '0.5rem', margin: 'auto' }}>
                   Sin ventas registradas.
                 </p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', overflowY: 'auto', paddingRight: '0.15rem' }}>
                   {topProducts.map((p, idx) => {
                     const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : 'rank-3';
                     const scalePct = maxTopSales > 0 ? (p.sales / maxTopSales) * 100 : 0;
@@ -471,9 +463,10 @@ export default function Dashboard({ setActiveTab }) {
                           alignItems: 'center', 
                           gap: '0.75rem', 
                           padding: '0.75rem', 
-                          background: 'rgba(255, 255, 255, 0.01)', 
+                          background: 'rgba(255, 255, 255, 0.015)', 
                           border: '1px solid rgba(255, 255, 255, 0.03)',
-                          borderRadius: '12px'
+                          borderRadius: '12px',
+                          flexShrink: 0
                         }}
                       >
                         {/* 3D Circular Rank Badge */}
