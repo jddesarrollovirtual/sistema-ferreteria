@@ -687,8 +687,16 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                       e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
                     }}
                   >
-                    {/* Background Image */}
-                    <div style={{ position: 'absolute', top: 0, left: 0, width: '55%', height: '100%', zIndex: 1 }}>
+                    {/* Background Image Container with Glow for Transparent PNGs */}
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: 0, 
+                      left: 0, 
+                      width: '55%', 
+                      height: '100%', 
+                      zIndex: 1,
+                      background: 'radial-gradient(circle at 35% 50%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%)'
+                    }}>
                       <img 
                         src={product.image_url || getProductImage(product.name)} 
                         alt={product.name} 
@@ -738,8 +746,8 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                         </span>
                       </div>
                       
-                      <div className="pos-product-name" style={{ fontSize: '0.9rem', flexShrink: 0, marginTop: '0.2rem' }}>
-                        {product.name}
+                      <div className="pos-product-name" style={{ fontSize: '0.9rem', flexShrink: 0, marginTop: '0.2rem', textTransform: 'capitalize' }}>
+                        {(product.name || '').toLowerCase()}
                       </div>
                       
                       <div className="pos-product-code" style={{ flexShrink: 0, marginBottom: '0.4rem', color: 'rgba(255,255,255,0.6)' }}>
