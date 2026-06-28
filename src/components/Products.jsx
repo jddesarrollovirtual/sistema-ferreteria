@@ -180,8 +180,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
             cost_price: Number(item.cost_price) || 0.0,
             sale_price: Number(item.sale_price) || 0.0,
             stock: 10,
-            min_stock: 5,
-            image_url: null,
+            min_stock: 5
           };
 
           let newId = Date.now() + i;
@@ -396,8 +395,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
       cost_price: Number(formCostPrice) || 0.0,
       sale_price: Number(formSalePrice),
       stock: editProduct ? editProduct.stock : 10, // Default stock for master catalogue simulation
-      min_stock: editProduct ? editProduct.min_stock : 5,
-      image_url: formImageUrl || null,
+      min_stock: editProduct ? editProduct.min_stock : 5
     };
 
     setLoading(true);
