@@ -159,7 +159,7 @@ function ResumenView({ products, logs, setInventorySubTab }) {
           <li key={`item-${index}`} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: entry.color }} />
-              Sucursal {entry.value}
+              Sucursal {entry.name}
             </div>
             <div style={{ display: 'flex', gap: '1rem' }}>
               <span style={{ color: '#fff' }}>S/ {pieData[index].value.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
@@ -348,8 +348,8 @@ function ResumenView({ products, logs, setInventorySubTab }) {
           <div style={{ overflowY: 'auto', flexGrow: 1, paddingRight: '0.5rem' }} className="custom-scrollbar">
             {logs.length === 0 ? <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Sin registros.</p> : logs.slice(0, 10).map((log, i) => {
               const isEntry = log.quantity > 0;
-              const isTransfer = log.type.includes('Transferencia');
-              const isAdjust = log.type.includes('Ajuste');
+              const isTransfer = log.type?.includes('Transferencia');
+              const isAdjust = log.type?.includes('Ajuste');
               
               let Icon = ShoppingCart;
               let bgColor = 'rgba(16,185,129,0.1)';
@@ -371,8 +371,8 @@ function ResumenView({ products, logs, setInventorySubTab }) {
                   </div>
                   <div style={{ flexGrow: 1, overflow: 'hidden' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.6rem', fontWeight: 700, color: iconColor }}>{title} <span style={{ color: 'var(--text-muted)' }}>{log.id.substring(0,8)}</span></span>
-                      <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{new Date(log.date).toLocaleTimeString('es-PE', {hour: '2-digit', minute:'2-digit'})}</span>
+                      <span style={{ fontSize: '0.6rem', fontWeight: 700, color: iconColor }}>{title} <span style={{ color: 'var(--text-muted)' }}>{String(log.id || '').substring(0,8)}</span></span>
+                      <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{log.date ? new Date(log.date).toLocaleTimeString('es-PE', {hour: '2-digit', minute:'2-digit'}) : ''}</span>
                     </div>
                     <p style={{ fontSize: '0.75rem', color: '#fff', margin: '0.1rem 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.product_name}</p>
                   </div>
