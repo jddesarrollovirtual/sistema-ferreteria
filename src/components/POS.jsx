@@ -653,7 +653,7 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                     onClick={() => remainingStock > 0 && addToCart(product)}
                     style={{
                       display: 'flex',
-                      background: 'rgba(13, 20, 38, 0.6)',
+                      background: 'rgba(13, 20, 38, 0.4)',
                       border: isOut 
                         ? '1px solid rgba(239, 68, 68, 0.25)' 
                         : isLow 
@@ -661,11 +661,11 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                           : '1px solid rgba(255, 255, 255, 0.05)',
                       borderRadius: '12px',
                       overflow: 'hidden',
-                      height: '115px',
+                      height: '125px',
                       position: 'relative',
                       cursor: remainingStock > 0 ? 'pointer' : 'not-allowed',
                       transition: 'all 0.2s ease',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                     }}
                     onMouseEnter={(e) => {
                       if (remainingStock > 0) {
@@ -681,24 +681,20 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                         : isLow 
                           ? 'rgba(245, 158, 11, 0.22)' 
                           : 'rgba(255, 255, 255, 0.05)';
-                      e.currentTarget.style.background = 'rgba(13, 20, 38, 0.6)';
+                      e.currentTarget.style.background = 'rgba(13, 20, 38, 0.4)';
                     }}
                   >
-                    {/* Left: Full bleed product image */}
-                    <div style={{ width: '120px', height: '100%', flexShrink: 0, position: 'relative' }}>
+                    {/* Left: Clean Image without gradient */}
+                    <div style={{ width: '125px', height: '100%', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.02)' }}>
                       <img 
                         src={product.image_url || getProductImage(product.name)} 
                         alt={product.name} 
                         style={{ 
                           width: '100%', 
                           height: '100%', 
-                          objectFit: 'cover',
-                          borderTopLeftRadius: '12px',
-                          borderBottomLeftRadius: '12px'
+                          objectFit: 'cover'
                         }} 
                       />
-                      {/* Gradient overlay to blend with dark background */}
-                      <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, background: 'linear-gradient(to right, transparent 50%, rgba(13, 20, 38, 0.6) 100%)', pointerEvents: 'none' }} />
                     </div>
 
                     {/* Right: Text area & Info */}
@@ -706,52 +702,78 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                       display: 'flex', 
                       flexDirection: 'column', 
                       flexGrow: 1, 
-                      padding: '0.75rem', 
+                      padding: '0.75rem 0.85rem', 
                       minWidth: 0,
                       justifyContent: 'space-between',
-                      position: 'relative'
+                      position: 'relative',
+                      background: 'linear-gradient(135deg, rgba(16, 23, 42, 0.2) 0%, rgba(13, 20, 38, 0.4) 100%)'
                     }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                        {/* Category Badge Capsule */}
-                        <span 
-                          style={{ 
-                            fontSize: '0.55rem', 
-                            color: '#fff', 
-                            background: '#6366f1',
-                            padding: '0.15rem 0.4rem',
-                            borderRadius: '4px',
-                            fontWeight: 800, 
-                            textTransform: 'uppercase', 
-                            letterSpacing: '0.5px',
-                            alignSelf: 'flex-start'
-                          }}
-                        >
-                          {product.categories?.name || 'Ferretería'}
-                        </span>
-                        
-                        <div className="pos-product-name" style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '0.2rem' }}>
-                          {product.name}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        {/* Category Badge Capsule & Plus Button Row */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <span 
+                            style={{ 
+                              fontSize: '0.55rem', 
+                              color: '#fff', 
+                              background: '#6366f1',
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '4px',
+                              fontWeight: 800, 
+                              textTransform: 'uppercase', 
+                              letterSpacing: '0.5px'
+                            }}
+                          >
+                            {product.categories?.name || 'Ferretería'}
+                          </span>
+                          
+                          {/* Circular Add Button + */}
+                          {remainingStock > 0 && (
+                            <div 
+                              style={{ 
+                                width: '22px', 
+                                height: '22px', 
+                                borderRadius: '50%', 
+                                background: '#6366f1', 
+                                color: '#fff', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center',
+                                boxShadow: '0 2px 6px rgba(99, 102, 241, 0.5)',
+                                marginTop: '-2px',
+                                marginRight: '-2px',
+                                flexShrink: 0
+                              }}
+                            >
+                              <Plus size={14} />
+                            </div>
+                          )}
                         </div>
                         
-                        <div className="pos-product-code" style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
-                          {product.barcode || 'Sin Código'}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                          <div className="pos-product-name" style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {product.name}
+                          </div>
+                          
+                          <div className="pos-product-code" style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+                            {product.barcode || 'Sin Código'}
+                          </div>
                         </div>
                       </div>
                       
                       {/* Price and Stock row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: 'auto' }}>
-                        <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#10b981' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+                        <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#10b981' }}>
                           S/ {Number(product.sale_price).toFixed(2)}
                         </span>
                         <span 
                           style={{ 
-                            padding: '0.15rem 0.4rem', 
+                            padding: '0.15rem 0.45rem', 
                             fontSize: '0.6rem', 
                             fontWeight: 700, 
                             borderRadius: '99px', 
-                            background: isOut ? 'rgba(239,68,68,0.1)' : isLow ? 'rgba(245,158,11,0.1)' : 'transparent',
-                            color: isOut ? 'var(--danger)' : isLow ? 'var(--warning)' : '#fbbf24',
-                            border: isOut ? '1px solid rgba(239,68,68,0.3)' : isLow ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(251, 191, 36, 0.4)',
+                            background: 'rgba(0,0,0,0.3)',
+                            color: isOut ? '#ef4444' : isLow ? '#f59e0b' : '#fbbf24',
+                            border: isOut ? '1px solid rgba(239,68,68,0.4)' : isLow ? '1px solid rgba(245,158,11,0.5)' : '1px solid rgba(251, 191, 36, 0.5)',
                             whiteSpace: 'nowrap' 
                           }}
                         >
@@ -759,28 +781,6 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                         </span>
                       </div>
                     </div>
-
-                    {/* Circular Add Button + */}
-                    {remainingStock > 0 && (
-                      <div 
-                        style={{ 
-                          position: 'absolute', 
-                          right: '12px', 
-                          top: '12px', 
-                          width: '24px', 
-                          height: '24px', 
-                          borderRadius: '50%', 
-                          background: '#6366f1', 
-                          color: '#fff', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)'
-                        }}
-                      >
-                        <Plus size={16} />
-                      </div>
-                    )}
                   </div>
                 );
               })}
