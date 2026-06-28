@@ -685,7 +685,7 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                     }}
                   >
                     {/* Background Image */}
-                    <div style={{ position: 'absolute', top: 0, left: 0, width: '60%', height: '100%', zIndex: 1 }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: '55%', height: '100%', zIndex: 1 }}>
                       <img 
                         src={product.image_url || getProductImage(product.name)} 
                         alt={product.name} 
@@ -701,7 +701,7 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                     <div style={{ 
                       position: 'absolute', 
                       top: 0, left: 0, right: 0, bottom: 0, 
-                      background: 'linear-gradient(to right, rgba(11,15,25,0) 20%, rgba(11,15,25,0.85) 50%, rgba(11,15,25,1) 65%)', 
+                      background: 'linear-gradient(to right, rgba(11,15,25,0) 10%, rgba(11,15,25,0.9) 45%, rgba(11,15,25,1) 55%)', 
                       zIndex: 2,
                       pointerEvents: 'none'
                     }} />
@@ -709,16 +709,15 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                     {/* Content Container (Right Side) */}
                     <div style={{ 
                       position: 'absolute', 
-                      top: 0, left: '42%', right: 0, bottom: 0, 
+                      top: 0, left: '38%', right: 0, bottom: 0, 
                       zIndex: 3, 
                       display: 'flex', 
                       flexDirection: 'column', 
                       justifyContent: 'center',
-                      padding: '1rem',
-                      paddingRight: '3.2rem' // leave space for plus button
+                      padding: '0.65rem 0.75rem',
                     }}>
                       {/* Category Badge Capsule */}
-                      <div style={{ marginBottom: '0.2rem' }}>
+                      <div style={{ marginBottom: '0.15rem', paddingRight: '28px', flexShrink: 0 }}>
                         <span 
                           style={{ 
                             fontSize: '0.55rem', 
@@ -728,36 +727,38 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                             borderRadius: '4px',
                             fontWeight: 800, 
                             textTransform: 'uppercase', 
-                            letterSpacing: '0.5px'
+                            letterSpacing: '0.5px',
+                            display: 'inline-block'
                           }}
                         >
                           {product.categories?.name || 'Ferretería'}
                         </span>
                       </div>
                       
-                      <div className="pos-product-name" style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '0.1rem' }}>
+                      <div className="pos-product-name" style={{ fontSize: '0.9rem', flexShrink: 0, marginTop: '0.2rem' }}>
                         {product.name}
                       </div>
                       
-                      <div className="pos-product-code" style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 500, marginBottom: '0.5rem' }}>
+                      <div className="pos-product-code" style={{ flexShrink: 0, marginBottom: '0.4rem', color: 'rgba(255,255,255,0.6)' }}>
                         {product.barcode || 'Sin Código'}
                       </div>
                       
                       {/* Price and Stock row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#10b981' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0, flexWrap: 'nowrap' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#10b981', whiteSpace: 'nowrap' }}>
                           S/ {Number(product.sale_price).toFixed(2)}
                         </span>
                         <span 
                           style={{ 
-                            padding: '0.15rem 0.4rem', 
-                            fontSize: '0.6rem', 
+                            padding: '0.15rem 0.35rem', 
+                            fontSize: '0.58rem', 
                             fontWeight: 700, 
                             borderRadius: '99px', 
-                            background: 'rgba(0,0,0,0.3)',
+                            background: 'rgba(0,0,0,0.4)',
                             color: isOut ? '#ef4444' : isLow ? '#f59e0b' : '#fbbf24',
                             border: isOut ? '1px solid rgba(239,68,68,0.4)' : isLow ? '1px solid rgba(245,158,11,0.5)' : '1px solid rgba(251, 191, 36, 0.5)',
-                            whiteSpace: 'nowrap' 
+                            whiteSpace: 'nowrap',
+                            display: 'inline-block'
                           }}
                         >
                           {isOut ? 'Agotado' : `Stock: ${remainingStock}`}
@@ -770,21 +771,21 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                       <div 
                         style={{ 
                           position: 'absolute', 
-                          right: '12px', 
-                          top: '12px', 
-                          width: '26px', 
-                          height: '26px', 
+                          right: '10px', 
+                          top: '10px', 
+                          width: '24px', 
+                          height: '24px', 
                           borderRadius: '50%', 
                           background: '#6366f1', 
                           color: '#fff', 
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'center',
-                          boxShadow: '0 2px 8px rgba(99, 102, 241, 0.5)',
+                          boxShadow: '0 2px 8px rgba(99, 102, 241, 0.6)',
                           zIndex: 4
                         }}
                       >
-                        <Plus size={16} strokeWidth={3} />
+                        <Plus size={14} strokeWidth={3} />
                       </div>
                     )}
                   </div>
