@@ -558,61 +558,72 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
       <div className="pos-container">
         
         {/* Left Side: Product catalog search and selection */}
-        <div className="pos-catalog-section glass-panel" style={{ flexGrow: 1, padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', minHeight: 0, borderRadius: '16px', border: '1px solid rgba(255,255,255,0.03)', background: 'rgba(15, 23, 42, 0.4)' }}>
+        <div className="pos-catalog-section glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: 0 }}>
           
           {/* Title / Header Row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div style={{ 
-                width: '44px', height: '44px', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)', borderRadius: '12px', color: '#818cf8', display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                width: '38px', 
+                height: '38px', 
+                background: 'rgba(99, 102, 241, 0.15)', 
+                border: '1px solid rgba(99, 102, 241, 0.25)', 
+                borderRadius: '10px', 
+                color: 'var(--primary)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center' 
               }}>
-                <ShoppingCart size={22} />
+                <ShoppingCart size={18} />
               </div>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, margin: 0, color: '#fff', letterSpacing: '-0.5px' }}>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: '#fff' }}>
                 Punto de Venta
               </h2>
             </div>
             
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button 
                 type="button" 
                 className="btn btn-secondary" 
-                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', borderRadius: '8px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', borderRadius: '8px' }}
                 onClick={() => setCameraScannerOpen(true)}
               >
-                <Camera size={16} /> Escanear
+                <Camera size={14} /> Escanear
               </button>
               <button 
                 type="button" 
                 className="btn btn-primary" 
-                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', borderRadius: '8px', background: '#6366f1', border: 'none' }}
+                style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', borderRadius: '8px', background: 'linear-gradient(135deg, #4f46e5 0%, #a855f7 100%)', border: 'none' }}
                 onClick={() => setManualAddModal(true)}
               >
-                <Plus size={16} /> Agregar Manual
+                <Plus size={14} /> Agregar Manual
               </button>
             </div>
           </div>
 
           {/* Category Filter Capsules bar */}
-          <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', flexShrink: 0, paddingBottom: '0.25rem' }} className="custom-scrollbar">
+          <div className="category-tab-scroll" style={{ flexShrink: 0, marginBottom: '0.25rem' }}>
             {categoriesList.map((cat) => (
               <button
                 key={cat}
                 type="button"
+                className={`category-tab-btn ${selectedCategory === cat ? 'active' : ''}`}
                 onClick={() => setSelectedCategory(cat)}
                 style={{ 
-                  borderRadius: '99px', fontSize: '0.85rem', padding: '0.4rem 1.25rem', fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer', transition: 'all 0.2s',
-                  background: selectedCategory === cat ? '#6366f1' : 'transparent',
-                  color: selectedCategory === cat ? '#fff' : 'var(--text-secondary)',
-                  border: selectedCategory === cat ? '1px solid #6366f1' : '1px solid rgba(255,255,255,0.08)'
+                  borderRadius: '8px', 
+                  fontSize: '0.78rem',
+                  padding: '0.4rem 0.95rem',
+                  fontWeight: 650
                 }}
               >
                 {cat === 'Todos' ? 'Todos' : cat}
               </button>
             ))}
+            {/* Ellipsis capsule more button */}
             <button 
               type="button" 
-              style={{ borderRadius: '99px', padding: '0.4rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-secondary)' }}
+              className="category-tab-btn" 
+              style={{ borderRadius: '8px', padding: '0.4rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               onClick={() => addNotification('Más categorías en desarrollo.', 'warning')}
             >
               ...
@@ -620,67 +631,155 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
           </div>
 
           {/* Products catalog section */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
             {/* Subheading: Productos Destacados */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-              <span style={{ color: '#fbbf24', fontSize: '1.2rem' }}>⭐</span>
-              <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff' }}>Productos Destacados</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+              <span style={{ color: '#fbbf24', fontSize: '1.05rem' }}>⭐</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>Productos Destacados</span>
             </div>
 
             {/* Products Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', flexGrow: 1, overflowY: 'auto', paddingRight: '0.5rem' }} className="custom-scrollbar">
+            <div className="pos-products-grid" style={{ flexGrow: 1, overflowY: 'auto' }}>
               {filteredProducts.map((product) => {
                 const cartItem = cart.find((item) => item.id === product.id);
                 const remainingStock = product.stock - (cartItem ? cartItem.quantity : 0);
+                const isLow = remainingStock > 0 && remainingStock <= product.min_stock;
                 const isOut = remainingStock <= 0;
 
                 return (
                   <div
                     key={product.id}
+                    className={`pos-product-card ${isOut ? 'out-of-stock' : ''}`}
                     onClick={() => remainingStock > 0 && addToCart(product)}
                     style={{
-                      display: 'flex', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.04)', height: '110px', position: 'relative', cursor: remainingStock > 0 ? 'pointer' : 'not-allowed', overflow: 'hidden', transition: 'all 0.2s'
+                      display: 'flex',
+                      background: 'rgba(13, 20, 38, 0.3)',
+                      border: isOut 
+                        ? '1px solid rgba(239, 68, 68, 0.25)' 
+                        : isLow 
+                          ? '1px solid rgba(245, 158, 11, 0.22)' 
+                          : '1px solid rgba(255, 255, 255, 0.04)',
+                      borderRadius: '16px',
+                      overflow: 'hidden',
+                      height: '115px',
+                      position: 'relative',
+                      cursor: remainingStock > 0 ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                     }}
                     onMouseEnter={(e) => {
-                      if (remainingStock > 0) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)'; }
+                      if (remainingStock > 0) {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.35)';
+                        e.currentTarget.style.background = 'rgba(13, 20, 38, 0.45)';
+                      }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.borderColor = isOut 
+                        ? 'rgba(239, 68, 68, 0.25)' 
+                        : isLow 
+                          ? 'rgba(245, 158, 11, 0.22)' 
+                          : 'rgba(255, 255, 255, 0.04)';
+                      e.currentTarget.style.background = 'rgba(13, 20, 38, 0.3)';
                     }}
                   >
-                    <div style={{ width: '110px', height: '100%', flexShrink: 0 }}>
+                    {/* Left: Beautifully rounded product image */}
+                    <div style={{ width: '100px', height: '100%', padding: '0.5rem', flexShrink: 0 }}>
                       <img 
                         src={product.image_url || getProductImage(product.name)} 
                         alt={product.name} 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderTopLeftRadius: '14px', borderBottomLeftRadius: '14px', background: 'rgba(0,0,0,0.3)' }} 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'cover',
+                          borderRadius: '10px',
+                          background: 'rgba(0,0,0,0.25)'
+                        }} 
                       />
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '0.65rem 0.85rem', justifyContent: 'space-between', minWidth: 0 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <span style={{ fontSize: '0.55rem', color: '#fff', background: '#4f46e5', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.2rem' }}>
-                          {product.categories?.name || 'FERRETERÍA'}
+                    {/* Right: Text area & Info */}
+                    <div style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      flexGrow: 1, 
+                      height: '100%', 
+                      justifyContent: 'space-between', 
+                      padding: '0.65rem 0.85rem 0.65rem 0.35rem', 
+                      minWidth: 0 
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', minWidth: 0 }}>
+                        {/* Category Badge Capsule */}
+                        <span 
+                          style={{ 
+                            fontSize: '0.58rem', 
+                            color: 'var(--primary)', 
+                            background: 'rgba(99, 102, 241, 0.08)',
+                            border: '1px solid rgba(99, 102, 241, 0.15)',
+                            padding: '0.1rem 0.4rem',
+                            borderRadius: '4px',
+                            fontWeight: 750, 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.5px',
+                            alignSelf: 'flex-start'
+                          }}
+                        >
+                          {product.categories?.name || 'Ferretería'}
                         </span>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 750, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '90%' }}>
+                        
+                        <div className="pos-product-name" style={{ fontSize: '0.85rem', fontWeight: 750, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '0.15rem' }}>
                           {product.name}
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                        
+                        <div className="pos-product-code" style={{ fontSize: '0.62rem', color: 'var(--text-secondary)' }}>
                           {product.barcode || 'Sin Código'}
                         </div>
                       </div>
                       
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#10b981' }}>
+                      {/* Price and Stock row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '1.08rem', fontWeight: 800, color: 'var(--success)' }}>
                           S/ {Number(product.sale_price).toFixed(2)}
                         </span>
-                        <span style={{ padding: '0.15rem 0.4rem', fontSize: '0.6rem', fontWeight: 700, borderRadius: '4px', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)' }}>
-                          Stock: {remainingStock}
+                        <span 
+                          className={`badge ${isOut ? 'badge-danger' : isLow ? 'badge-warning' : 'badge-success'}`}
+                          style={{ 
+                            padding: '0.15rem 0.45rem', 
+                            fontSize: '0.62rem', 
+                            fontWeight: 650, 
+                            borderRadius: '6px', 
+                            background: isOut ? 'rgba(239,68,68,0.1)' : isLow ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)',
+                            color: isOut ? 'var(--danger)' : isLow ? 'var(--warning)' : 'var(--success)',
+                            border: isOut ? '1px solid rgba(239,68,68,0.2)' : isLow ? '1px solid rgba(245,158,11,0.2)' : '1px solid rgba(16,185,129,0.2)',
+                            whiteSpace: 'nowrap' 
+                          }}
+                        >
+                          {isOut ? 'Agotado' : `Stock: ${remainingStock}`}
                         </span>
                       </div>
                     </div>
 
+                    {/* Circular Add Button + */}
                     {remainingStock > 0 && (
-                      <div style={{ position: 'absolute', right: '0.65rem', top: '0.65rem', width: '22px', height: '22px', borderRadius: '50%', background: '#6366f1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
+                      <div 
+                        style={{ 
+                          position: 'absolute', 
+                          right: '12px', 
+                          top: '12px', 
+                          width: '24px', 
+                          height: '24px', 
+                          borderRadius: '50%', 
+                          background: 'rgba(99, 102, 241, 0.15)', 
+                          border: '1px solid rgba(99, 102, 241, 0.25)', 
+                          color: 'var(--primary)', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          fontSize: '0.9rem',
+                          fontWeight: 800
+                        }}
+                      >
                         <Plus size={14} />
                       </div>
                     )}
@@ -695,196 +794,372 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
               )}
             </div>
 
+            {/* Show "Ver más productos" pill button at the bottom of the grid */}
             {filteredProducts.length > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem', flexShrink: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.2rem', flexShrink: 0 }}>
                 <button
                   type="button"
-                  style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.05)', color: 'var(--text-secondary)', padding: '0.5rem 1.25rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.04)',
+                    color: 'var(--text-secondary)',
+                    padding: '0.35rem 1rem',
+                    borderRadius: '99px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}
                   onClick={() => addNotification('Cargando más productos...', 'primary')}
                 >
-                  Ver más productos <ChevronDown size={14} />
+                  Ver más productos <ChevronDown size={12} />
                 </button>
               </div>
             )}
           </div>
 
-          {/* Atajos de Teclado Footer */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem', color: 'var(--text-secondary)', flexShrink: 0, flexWrap: 'wrap' }}>
-            <span style={{ color: '#fff', fontWeight: 600, marginRight: '0.5rem' }}>Atajos de Teclado</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ background: '#4f46e5', color: '#fff', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 700, fontSize: '0.75rem' }}>F2</span> Buscar
+          {/* Keyboard HUD Footer Shortcuts bar */}
+          <div 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              gap: '1.25rem', 
+              marginTop: '0.85rem', 
+              borderTop: '1px solid var(--border-color)', 
+              paddingTop: '0.75rem', 
+              fontSize: '0.75rem', 
+              color: 'var(--text-secondary)',
+              flexShrink: 0,
+              flexWrap: 'wrap'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#fff', fontWeight: 650 }}>
+              <span>Atajos de Teclado</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ background: '#4f46e5', color: '#fff', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 700, fontSize: '0.75rem' }}>F8</span> Vaciar Carrito
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <strong style={{ color: '#fff', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '0.15rem 0.45rem', borderRadius: '5px', fontSize: '0.68rem', fontFamily: 'monospace' }}>F2</strong> 
+              <span style={{ color: 'var(--text-secondary)' }}>Buscar</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ background: '#4f46e5', color: '#fff', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 700, fontSize: '0.75rem' }}>F12</span> Cobrar Venta
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <strong style={{ color: '#fff', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '0.15rem 0.45rem', borderRadius: '5px', fontSize: '0.68rem', fontFamily: 'monospace' }}>F8</strong> 
+              <span style={{ color: 'var(--text-secondary)' }}>Vaciar Carrito</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ background: '#4f46e5', color: '#fff', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 700, fontSize: '0.75rem' }}>Ctrl + K</span> Escanear
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <strong style={{ color: '#fff', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '0.15rem 0.45rem', borderRadius: '5px', fontSize: '0.68rem', fontFamily: 'monospace' }}>F12</strong> 
+              <span style={{ color: 'var(--text-secondary)' }}>Cobrar Venta</span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <strong style={{ color: '#fff', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '0.15rem 0.45rem', borderRadius: '5px', fontSize: '0.68rem', fontFamily: 'monospace' }}>Ctrl + K</strong> 
+              <span style={{ color: 'var(--text-secondary)' }}>Escanear</span>
             </div>
           </div>
         </div>
 
         {/* Right Side: Shopping Cart / Sidebar Bill */}
-        {/* Panel Derecho: Carrito */}
-        <div className="pos-cart-section glass-panel" style={{ flex: '0 0 380px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.03)', background: 'rgba(15, 23, 42, 0.4)' }}>
+        <div className="pos-cart-section glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', overflow: 'hidden' }}>
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, paddingBottom: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff' }}>Boleta de Venta</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', padding: '0.25rem 0.65rem', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 700 }}>
+          {/* Cart Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#fff' }}>Boleta de Venta</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <span className="badge" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.2)', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700 }}>
                 {cart.reduce((sum, item) => sum + item.quantity, 0)} Items
               </span>
               {cart.length > 0 && (
                 <button 
                   type="button" 
-                  onClick={() => { setCart([]); addNotification('Carrito vaciado.', 'warning'); }}
-                  style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', padding: '0.4rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                  onClick={() => {
+                    setCart([]);
+                    addNotification('Carrito vaciado.', 'warning');
+                  }}
+                  style={{ 
+                    background: 'rgba(239,68,68,0.1)', 
+                    border: '1px solid rgba(239,68,68,0.2)', 
+                    color: 'var(--danger)', 
+                    padding: '0.3rem',
+                    borderRadius: '6px',
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    transition: 'opacity 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = 0.8}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = 1}
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={13} />
                 </button>
               )}
             </div>
           </div>
 
-          <div style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingRight: '0.25rem' }} className="custom-scrollbar">
+          {/* Cart Items List */}
+          <div className="pos-cart-items" style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.6rem', paddingRight: '0.15rem' }}>
             {cart.map((item) => (
               <div 
                 key={item.id} 
-                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0', background: 'transparent', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '0.75rem', position: 'relative' }}
+                className="pos-cart-item" 
+                style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.65rem',
+                  padding: '0.6rem 0.75rem', 
+                  background: 'rgba(255, 255, 255, 0.015)',
+                  border: '1px solid rgba(255, 255, 255, 0.03)',
+                  borderRadius: '12px',
+                  position: 'relative'
+                }}
               >
+                {/* Item image */}
                 <img 
                   src={item.image_url || getProductImage(item.name)} 
                   alt={item.name} 
-                  style={{ width: '56px', height: '56px', borderRadius: '10px', objectFit: 'cover', background: 'rgba(0,0,0,0.3)', flexShrink: 0 }}
+                  style={{ 
+                    width: '38px', 
+                    height: '38px', 
+                    borderRadius: '8px', 
+                    objectFit: 'cover',
+                    background: 'rgba(0,0,0,0.2)',
+                    flexShrink: 0
+                  }}
                 />
 
                 <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, gap: '0.1rem' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 750, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '1rem' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 750, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '1.25rem' }}>
                     {item.name}
                   </span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.15rem' }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
                     {item.barcode || 'Sin código'}
                   </span>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#10b981' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)' }}>
                     S/ {Number(item.sale_price).toFixed(2)}
                   </span>
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem', flexShrink: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0, 0, 0, 0.4)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '99px', padding: '0.15rem 0.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                  {/* Quantity controls capsule */}
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    background: 'rgba(255, 255, 255, 0.02)', 
+                    border: '1px solid rgba(255, 255, 255, 0.05)', 
+                    borderRadius: '8px', 
+                    padding: '0.15rem' 
+                  }}>
                     <button 
-                      style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'transparent', border: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} 
+                      className="qty-btn" 
+                      style={{ width: '20px', height: '20px', borderRadius: '5px', background: 'none', border: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} 
                       onClick={() => updateQty(item.id, -1)}
                     >
-                      <Minus size={12} />
+                      <Minus size={9} />
                     </button>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', minWidth: '20px', textAlign: 'center' }}>{item.quantity}</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fff', minWidth: '16px', textAlign: 'center' }}>{item.quantity}</span>
                     <button 
-                      style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'transparent', border: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} 
+                      className="qty-btn" 
+                      style={{ width: '20px', height: '20px', borderRadius: '5px', background: 'none', border: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} 
                       onClick={() => updateQty(item.id, 1)}
                     >
-                      <Plus size={12} />
+                      <Plus size={9} />
                     </button>
                   </div>
                   
-                  <span style={{ fontSize: '1rem', fontWeight: 800, color: '#fff', textAlign: 'right' }}>
+                  {/* Item Total Price */}
+                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', minWidth: '55px', textAlign: 'right' }}>
                     S/ {(item.sale_price * item.quantity).toFixed(2)}
                   </span>
                 </div>
 
+                {/* Tiny delete cross */}
                 <button 
-                  type="button" onClick={() => removeFromCart(item.id)}
-                  style={{ position: 'absolute', right: '0', top: '0', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, opacity: 0.6 }}
+                  type="button"
+                  onClick={() => removeFromCart(item.id)}
+                  style={{ 
+                    position: 'absolute', 
+                    right: '6px', 
+                    top: '6px', 
+                    background: 'none', 
+                    border: 'none', 
+                    color: 'var(--text-muted)', 
+                    cursor: 'pointer', 
+                    padding: 0, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    opacity: 0.6
+                  }}
                   onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
                   onMouseLeave={(e) => e.currentTarget.style.opacity = 0.6}
                 >
-                  <X size={14} />
+                  <X size={11} />
                 </button>
               </div>
             ))}
 
             {cart.length === 0 && (
-              <div style={{ textAlign: 'center', margin: 'auto 0', color: 'var(--text-muted)' }}>
-                <ShoppingCart size={40} style={{ marginBottom: '1rem', opacity: 0.15, margin: '0 auto' }} />
-                <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Carrito Vacío</p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Seleccione productos para facturar.</p>
+              <div style={{ textAlign: 'center', margin: 'auto 0', color: 'var(--text-muted)', padding: '2rem 1rem' }}>
+                <ShoppingCart size={36} style={{ marginBottom: '0.65rem', opacity: 0.15, margin: '0 auto' }} />
+                <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
+                  Carrito Vacío
+                </p>
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  Seleccione productos del catálogo para facturar.
+                </p>
               </div>
             )}
           </div>
 
-          <div style={{ border: '1px dashed rgba(99, 102, 241, 0.4)', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '12px', padding: '1rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-            <Barcode size={20} color="#818cf8" />
-            <span style={{ fontSize: '0.75rem', color: '#818cf8', fontWeight: 600 }}>
+          {/* Dotted Instruction Banner */}
+          <div style={{ 
+            border: '1px dashed rgba(99, 102, 241, 0.3)', 
+            background: 'rgba(99, 102, 241, 0.02)', 
+            borderRadius: '10px', 
+            padding: '0.65rem', 
+            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.45rem',
+            flexShrink: 0
+          }}>
+            <Barcode size={16} className="text-primary" />
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 550 }}>
               Escanea más productos o agrégalos desde el catálogo
             </span>
           </div>
 
-          <div style={{ paddingTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flexShrink: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          {/* Totals Summary */}
+          <div style={{ 
+            borderTop: '1px solid var(--border-color)', 
+            paddingTop: '0.75rem', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.35rem',
+            flexShrink: 0 
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
               <span>Subtotal (sin IGV)</span>
-              <span style={{ fontWeight: 600, color: '#fff' }}>S/ {totals.subtotal.toFixed(2)}</span>
+              <span style={{ fontWeight: 600 }}>S/ {totals.subtotal.toFixed(2)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
               <span>IGV (18%)</span>
-              <span style={{ fontWeight: 600, color: '#fff' }}>S/ {totals.tax.toFixed(2)}</span>
+              <span style={{ fontWeight: 600 }}>S/ {totals.tax.toFixed(2)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-              <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>Total a Cobrar</span>
-              <span style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              fontSize: '1.05rem', 
+              fontWeight: 800, 
+              color: '#fff',
+              marginTop: '0.35rem', 
+              paddingTop: '0.45rem', 
+              borderTop: '1px dashed rgba(255,255,255,0.06)' 
+            }}>
+              <span>Total a Cobrar</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--success)' }}>
                 S/ {totals.total.toFixed(2)}
               </span>
             </div>
           </div>
 
+          {/* Big Green Checkout Button */}
           <button 
             type="button"
             className="btn btn-success" 
-            style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', borderRadius: '12px', fontWeight: 800, background: '#10b981', border: 'none', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)', cursor: cart.length === 0 ? 'not-allowed' : 'pointer', flexShrink: 0, marginTop: '0.25rem' }}
+            style={{ 
+              width: '100%', 
+              padding: '0.75rem', 
+              fontSize: '0.92rem', 
+              borderRadius: '10px', 
+              fontWeight: 750, 
+              background: '#10b981', 
+              border: 'none',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+              cursor: cart.length === 0 ? 'not-allowed' : 'pointer',
+              flexShrink: 0 
+            }}
             disabled={cart.length === 0}
             onClick={handleCheckout}
           >
             Cobrar Venta (F12)
           </button>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', flexShrink: 0 }}>
+          {/* Payment Methods selector row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.45rem', flexShrink: 0 }}>
             <button
               type="button"
               onClick={() => setPaymentMethod('efectivo')}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.65rem 0.2rem', fontSize: '0.75rem', fontWeight: 650, borderRadius: '10px', cursor: 'pointer', transition: 'all 0.2s ease',
-                background: paymentMethod === 'efectivo' ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                border: paymentMethod === 'efectivo' ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.05)',
-                color: paymentMethod === 'efectivo' ? '#10b981' : 'var(--text-secondary)'
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                padding: '0.45rem',
+                fontSize: '0.75rem',
+                fontWeight: 650,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: paymentMethod === 'efectivo' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255,255,255,0.01)',
+                border: paymentMethod === 'efectivo' ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.04)',
+                color: paymentMethod === 'efectivo' ? '#10b981' : 'var(--text-secondary)',
+                transition: 'all 0.2s ease'
               }}
             >
-              <Coins size={14} /> Efectivo
+              <Coins size={13} />
+              Efectivo
             </button>
             <button
               type="button"
               onClick={() => setPaymentMethod('yape_plin')}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.65rem 0.2rem', fontSize: '0.75rem', fontWeight: 650, borderRadius: '10px', cursor: 'pointer', transition: 'all 0.2s ease',
-                background: paymentMethod === 'yape_plin' ? 'rgba(168, 85, 247, 0.1)' : 'transparent',
-                border: paymentMethod === 'yape_plin' ? '1px solid #a855f7' : '1px solid rgba(255,255,255,0.05)',
-                color: paymentMethod === 'yape_plin' ? '#c084fc' : 'var(--text-secondary)'
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                padding: '0.45rem',
+                fontSize: '0.75rem',
+                fontWeight: 650,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: paymentMethod === 'yape_plin' ? 'rgba(168, 85, 247, 0.08)' : 'rgba(255,255,255,0.01)',
+                border: paymentMethod === 'yape_plin' ? '1px solid #a855f7' : '1px solid rgba(255,255,255,0.04)',
+                color: paymentMethod === 'yape_plin' ? '#c084fc' : 'var(--text-secondary)',
+                transition: 'all 0.2s ease'
               }}
             >
-              <Smartphone size={14} /> Yape / Plin
+              <Smartphone size={13} />
+              Yape / Plin
             </button>
             <button
               type="button"
               onClick={() => setPaymentMethod('tarjeta')}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.65rem 0.2rem', fontSize: '0.75rem', fontWeight: 650, borderRadius: '10px', cursor: 'pointer', transition: 'all 0.2s ease',
-                background: paymentMethod === 'tarjeta' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                border: paymentMethod === 'tarjeta' ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.05)',
-                color: paymentMethod === 'tarjeta' ? '#60a5fa' : 'var(--text-secondary)'
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                padding: '0.45rem',
+                fontSize: '0.75rem',
+                fontWeight: 650,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: paymentMethod === 'tarjeta' ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255,255,255,0.01)',
+                border: paymentMethod === 'tarjeta' ? '1px solid #6366f1' : '1px solid rgba(255,255,255,0.04)',
+                color: paymentMethod === 'tarjeta' ? '#818cf8' : 'var(--text-secondary)',
+                transition: 'all 0.2s ease'
               }}
             >
-              <CreditCard size={14} /> Tarjeta
+              <CreditCard size={13} />
+              Tarjeta
             </button>
           </div>
         </div>
