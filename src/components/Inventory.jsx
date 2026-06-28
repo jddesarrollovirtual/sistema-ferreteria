@@ -406,7 +406,7 @@ function ResumenView({ products, logs, setInventorySubTab }) {
             {lowStockProducts.length === 0 ? <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Todo en orden.</p> : lowStockProducts.slice(0, 15).map((p, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                 <div style={{ flex: '4', display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
-                  <img src={getProductImage(p)} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }} />
+                  <img src={p.image_url || getProductImage(p.name)} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }} />
                   <span style={{ fontSize: '0.75rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
                 </div>
                 <div style={{ flex: '2', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.branch}</div>
@@ -433,7 +433,7 @@ function ResumenView({ products, logs, setInventorySubTab }) {
             {outOfStockProducts.length === 0 ? <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Ninguno agotado.</p> : outOfStockProducts.slice(0, 15).map((p, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                 <div style={{ flex: '5', display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
-                  <img src={getProductImage(p)} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }} />
+                  <img src={p.image_url || getProductImage(p.name)} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }} />
                   <span style={{ fontSize: '0.75rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
                 </div>
                 <div style={{ flex: '3', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.branch}</div>
