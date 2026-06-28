@@ -256,14 +256,8 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
         .order('name');
       if (error) throw error;
 
-      // Sync and merge local custom images
-      const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
-      const productsWithImages = (data || []).map((p) => ({
-        ...p,
-        image_url: localImages[p.id] || p.image_url || null
-      }));
-
-      setProducts(productsWithImages);
+      // We now fetch image_url directly from Supabase
+      setProducts(data || []);
       setDbError(false);
     } catch (error) {
       console.error('Error fetching products:', error);

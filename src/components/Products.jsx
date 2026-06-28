@@ -180,7 +180,12 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
             cost_price: Number(item.cost_price) || 0.0,
             sale_price: Number(item.sale_price) || 0.0,
             stock: 10,
-            min_stock: 5
+            min_stock: 5,
+            brand: item.brand || 'Generico',
+            tax: item.tax || '18%',
+            unit: item.unit || 'Unidad',
+            status: 'Activo',
+            image_url: null
           };
 
           let newId = Date.now() + i;
@@ -194,23 +199,9 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
             if (data && data.length > 0) newId = data[0].id;
           }
 
-          // Save ERP metadata
-          const erpMetadata = JSON.parse(localStorage.getItem('ferre_product_erp_metadata') || '{}');
-          erpMetadata[newId] = {
-            brand: item.brand || 'Stanley',
-            tax: item.tax || '18%',
-            unit: item.unit || 'Unidad',
-            status: 'Activo'
-          };
-          localStorage.setItem('ferre_product_erp_metadata', JSON.stringify(erpMetadata));
-
           importedData.push({
             id: newId,
             ...payload,
-            brand: item.brand || 'Stanley',
-            tax: item.tax || '18%',
-            unit: item.unit || 'Unidad',
-            status: 'Activo',
             categories: matchedCat ? { name: matchedCat.name } : null,
             suppliers: matchedSup ? { name: matchedSup.name } : null
           });
@@ -265,23 +256,8 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
         .order('name');
       if (prodError) throw prodError;
 
-      // Sync and merge local custom images and ERP metadata (Brand, Tax, Unit, Status)
-      const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
-      const erpMetadata = JSON.parse(localStorage.getItem('ferre_product_erp_metadata') || '{}');
-
-      const productsWithERP = (prodData || []).map((p) => {
-        const meta = erpMetadata[p.id] || {};
-        return {
-          ...p,
-          image_url: localImages[p.id] || p.image_url || null,
-          brand: meta.brand || 'Stanley',
-          tax: meta.tax || '18%',
-          unit: meta.unit || 'Unidad',
-          status: meta.status || (p.stock > 0 ? 'Activo' : 'Inactivo')
-        };
-      });
-
-      setProducts(productsWithERP);
+      // Database now has image_url, brand, tax, unit, status columns
+      setProducts(prodData || []);
       setDbError(false);
     } catch (error) {
       console.error('Error fetching catalog, loading mock database:', error);
@@ -394,8 +370,13 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
       supplier_id: formSupplierId ? Number(formSupplierId) : null,
       cost_price: Number(formCostPrice) || 0.0,
       sale_price: Number(formSalePrice),
-      stock: editProduct ? editProduct.stock : 10, // Default stock for master catalogue simulation
-      min_stock: editProduct ? editProduct.min_stock : 5
+      stock: editProduct ? editProduct.stock : 10,
+      min_stock: editProduct ? editProduct.min_stock : 5,
+      brand: formBrand || 'Generico',
+      tax: formTax || '18%',
+      unit: formUnit || 'Unidad',
+      status: formStatus || 'Activo',
+      image_url: formImageUrl || null
     };
 
     setLoading(true);
@@ -419,24 +400,6 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
           .select();
         if (error) throw error;
         savedProd = data[0];
-      }
-
-      // Save ERP attributes and custom images in localStorage maps
-      if (savedProd) {
-        const erpMetadata = JSON.parse(localStorage.getItem('ferre_product_erp_metadata') || '{}');
-        erpMetadata[savedProd.id] = {
-          brand: formBrand,
-          tax: formTax,
-          unit: formUnit,
-          status: formStatus
-        };
-        localStorage.setItem('ferre_product_erp_metadata', JSON.stringify(erpMetadata));
-
-        if (formImageUrl) {
-          const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
-          localImages[savedProd.id] = formImageUrl;
-          localStorage.setItem('ferre_product_images', JSON.stringify(localImages));
-        }
       }
 
       addNotification(editProduct ? 'Producto actualizado.' : 'Producto creado con éxito.', 'success');
