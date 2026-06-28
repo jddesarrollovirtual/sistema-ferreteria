@@ -78,12 +78,7 @@ export default function Inventory({ inventorySubTab, setInventorySubTab, addNoti
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '1.25rem', overflowY: 'auto' }}>
-      {/* Header General del Módulo */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', marginBottom: '0.25rem' }}>Inventario</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Consulta y gestiona las existencias de productos por sucursal.</p>
-      </div>
-      
+
       {/* Dynamic View Renderer */}
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         {renderActiveView()}
