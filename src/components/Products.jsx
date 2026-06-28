@@ -1243,35 +1243,38 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
               <button 
                 className="btn btn-secondary" 
                 style={{ padding: '0.35rem', fontSize: '0.68rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
-                onClick={() => addNotification('Stock por sucursales consultado.', 'success')}
+                onClick={() => addNotification('Disponible en el Módulo de Inventario / Almacén.', 'primary')}
               >
                 🏪 Sucursales
               </button>
               <button 
                 className="btn btn-secondary" 
                 style={{ padding: '0.35rem', fontSize: '0.68rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
-                onClick={() => addNotification('Consultando Kardex del inventario.', 'primary')}
+                onClick={() => addNotification('Disponible en el Módulo de Kardex.', 'primary')}
               >
                 🕒 Movimientos
               </button>
               <button 
                 className="btn btn-secondary" 
-                style={{ padding: '0.35rem', fontSize: '0.68rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
-                onClick={() => addNotification('Generando barra de etiquetas PDF.', 'success')}
+                style={{ padding: '0.35rem', fontSize: '0.68rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', border: '1px solid rgba(168, 85, 247, 0.3)' }}
+                onClick={() => {
+                  setSelectedProductIds([selectedProduct.id]);
+                  setLabelsModalOpen(true);
+                }}
               >
                 🏷️ Imprimir Etiq.
               </button>
               <button 
                 className="btn btn-secondary" 
                 style={{ padding: '0.35rem', fontSize: '0.68rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
-                onClick={() => addNotification('Consultando pedidos de compras.', 'primary')}
+                onClick={() => addNotification('Disponible en el Módulo de Compras.', 'primary')}
               >
                 🛒 Compras Hist.
               </button>
               <button 
                 className="btn btn-secondary" 
                 style={{ padding: '0.35rem', fontSize: '0.68rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
-                onClick={() => addNotification('Consultando pedidos de venta.', 'primary')}
+                onClick={() => addNotification('Disponible en el Módulo de Ventas / POS.', 'primary')}
               >
                 📈 Ventas Hist.
               </button>
