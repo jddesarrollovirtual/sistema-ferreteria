@@ -652,26 +652,26 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                     className={`pos-product-card ${isOut ? 'out-of-stock' : ''}`}
                     onClick={() => remainingStock > 0 && addToCart(product)}
                     style={{
-                      display: 'flex',
-                      background: 'rgba(13, 20, 38, 0.4)',
+                      display: 'block',
+                      background: '#0B0F19',
                       border: isOut 
                         ? '1px solid rgba(239, 68, 68, 0.25)' 
                         : isLow 
                           ? '1px solid rgba(245, 158, 11, 0.22)' 
                           : '1px solid rgba(255, 255, 255, 0.05)',
-                      borderRadius: '12px',
+                      borderRadius: '16px',
                       overflow: 'hidden',
-                      height: '125px',
+                      height: '135px',
                       position: 'relative',
                       cursor: remainingStock > 0 ? 'pointer' : 'not-allowed',
                       transition: 'all 0.2s ease',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
                     }}
                     onMouseEnter={(e) => {
                       if (remainingStock > 0) {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.4)';
-                        e.currentTarget.style.background = 'rgba(18, 25, 45, 0.8)';
+                        e.currentTarget.style.transform = 'translateY(-3px)';
+                        e.currentTarget.style.borderColor = '#6366f1';
+                        e.currentTarget.style.boxShadow = '0 8px 20px rgba(99, 102, 241, 0.2)';
                       }
                     }}
                     onMouseLeave={(e) => {
@@ -681,93 +681,76 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                         : isLow 
                           ? 'rgba(245, 158, 11, 0.22)' 
                           : 'rgba(255, 255, 255, 0.05)';
-                      e.currentTarget.style.background = 'rgba(13, 20, 38, 0.4)';
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
                     }}
                   >
-                    {/* Left: Clean Image without gradient */}
-                    <div style={{ width: '125px', height: '100%', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.02)' }}>
+                    {/* Background Image */}
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: '60%', height: '100%', zIndex: 1 }}>
                       <img 
                         src={product.image_url || getProductImage(product.name)} 
                         alt={product.name} 
                         style={{ 
                           width: '100%', 
                           height: '100%', 
-                          objectFit: 'cover'
+                          objectFit: 'cover',
+                          objectPosition: 'left center'
                         }} 
                       />
                     </div>
-
-                    {/* Right: Text area & Info */}
+                    {/* Gradient Overlay for seamless fade */}
                     <div style={{ 
+                      position: 'absolute', 
+                      top: 0, left: 0, right: 0, bottom: 0, 
+                      background: 'linear-gradient(to right, rgba(11,15,25,0) 20%, rgba(11,15,25,0.85) 50%, rgba(11,15,25,1) 65%)', 
+                      zIndex: 2,
+                      pointerEvents: 'none'
+                    }} />
+
+                    {/* Content Container (Right Side) */}
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: 0, left: '42%', right: 0, bottom: 0, 
+                      zIndex: 3, 
                       display: 'flex', 
                       flexDirection: 'column', 
-                      flexGrow: 1, 
-                      padding: '0.75rem 0.85rem', 
-                      minWidth: 0,
-                      justifyContent: 'space-between',
-                      position: 'relative',
-                      background: 'linear-gradient(135deg, rgba(16, 23, 42, 0.2) 0%, rgba(13, 20, 38, 0.4) 100%)'
+                      justifyContent: 'center',
+                      padding: '1rem',
+                      paddingRight: '3.2rem' // leave space for plus button
                     }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        {/* Category Badge Capsule & Plus Button Row */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <span 
-                            style={{ 
-                              fontSize: '0.55rem', 
-                              color: '#fff', 
-                              background: '#6366f1',
-                              padding: '0.15rem 0.5rem',
-                              borderRadius: '4px',
-                              fontWeight: 800, 
-                              textTransform: 'uppercase', 
-                              letterSpacing: '0.5px'
-                            }}
-                          >
-                            {product.categories?.name || 'Ferretería'}
-                          </span>
-                          
-                          {/* Circular Add Button + */}
-                          {remainingStock > 0 && (
-                            <div 
-                              style={{ 
-                                width: '22px', 
-                                height: '22px', 
-                                borderRadius: '50%', 
-                                background: '#6366f1', 
-                                color: '#fff', 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center',
-                                boxShadow: '0 2px 6px rgba(99, 102, 241, 0.5)',
-                                marginTop: '-2px',
-                                marginRight: '-2px',
-                                flexShrink: 0
-                              }}
-                            >
-                              <Plus size={14} />
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                          <div className="pos-product-name" style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {product.name}
-                          </div>
-                          
-                          <div className="pos-product-code" style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
-                            {product.barcode || 'Sin Código'}
-                          </div>
-                        </div>
+                      {/* Category Badge Capsule */}
+                      <div style={{ marginBottom: '0.2rem' }}>
+                        <span 
+                          style={{ 
+                            fontSize: '0.55rem', 
+                            color: '#fff', 
+                            background: '#6366f1',
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '4px',
+                            fontWeight: 800, 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.5px'
+                          }}
+                        >
+                          {product.categories?.name || 'Ferretería'}
+                        </span>
+                      </div>
+                      
+                      <div className="pos-product-name" style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '0.1rem' }}>
+                        {product.name}
+                      </div>
+                      
+                      <div className="pos-product-code" style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 500, marginBottom: '0.5rem' }}>
+                        {product.barcode || 'Sin Código'}
                       </div>
                       
                       {/* Price and Stock row */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-                        <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#10b981' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#10b981' }}>
                           S/ {Number(product.sale_price).toFixed(2)}
                         </span>
                         <span 
                           style={{ 
-                            padding: '0.15rem 0.45rem', 
+                            padding: '0.15rem 0.4rem', 
                             fontSize: '0.6rem', 
                             fontWeight: 700, 
                             borderRadius: '99px', 
@@ -781,6 +764,29 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                         </span>
                       </div>
                     </div>
+
+                    {/* Circular Add Button + (Top Right) */}
+                    {remainingStock > 0 && (
+                      <div 
+                        style={{ 
+                          position: 'absolute', 
+                          right: '12px', 
+                          top: '12px', 
+                          width: '26px', 
+                          height: '26px', 
+                          borderRadius: '50%', 
+                          background: '#6366f1', 
+                          color: '#fff', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          boxShadow: '0 2px 8px rgba(99, 102, 241, 0.5)',
+                          zIndex: 4
+                        }}
+                      >
+                        <Plus size={16} strokeWidth={3} />
+                      </div>
+                    )}
                   </div>
                 );
               })}
