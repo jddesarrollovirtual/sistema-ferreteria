@@ -653,25 +653,25 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                     onClick={() => remainingStock > 0 && addToCart(product)}
                     style={{
                       display: 'flex',
-                      background: 'rgba(13, 20, 38, 0.3)',
+                      background: 'rgba(13, 20, 38, 0.6)',
                       border: isOut 
                         ? '1px solid rgba(239, 68, 68, 0.25)' 
                         : isLow 
                           ? '1px solid rgba(245, 158, 11, 0.22)' 
-                          : '1px solid rgba(255, 255, 255, 0.04)',
-                      borderRadius: '16px',
+                          : '1px solid rgba(255, 255, 255, 0.05)',
+                      borderRadius: '12px',
                       overflow: 'hidden',
                       height: '115px',
                       position: 'relative',
                       cursor: remainingStock > 0 ? 'pointer' : 'not-allowed',
                       transition: 'all 0.2s ease',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                     }}
                     onMouseEnter={(e) => {
                       if (remainingStock > 0) {
                         e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.35)';
-                        e.currentTarget.style.background = 'rgba(13, 20, 38, 0.45)';
+                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+                        e.currentTarget.style.background = 'rgba(18, 25, 45, 0.8)';
                       }
                     }}
                     onMouseLeave={(e) => {
@@ -680,12 +680,12 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                         ? 'rgba(239, 68, 68, 0.25)' 
                         : isLow 
                           ? 'rgba(245, 158, 11, 0.22)' 
-                          : 'rgba(255, 255, 255, 0.04)';
-                      e.currentTarget.style.background = 'rgba(13, 20, 38, 0.3)';
+                          : 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.background = 'rgba(13, 20, 38, 0.6)';
                     }}
                   >
-                    {/* Left: Beautifully rounded product image */}
-                    <div style={{ width: '100px', height: '100%', padding: '0.5rem', flexShrink: 0 }}>
+                    {/* Left: Full bleed product image */}
+                    <div style={{ width: '120px', height: '100%', flexShrink: 0, position: 'relative' }}>
                       <img 
                         src={product.image_url || getProductImage(product.name)} 
                         alt={product.name} 
@@ -693,10 +693,12 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                           width: '100%', 
                           height: '100%', 
                           objectFit: 'cover',
-                          borderRadius: '10px',
-                          background: 'rgba(0,0,0,0.25)'
+                          borderTopLeftRadius: '12px',
+                          borderBottomLeftRadius: '12px'
                         }} 
                       />
+                      {/* Gradient overlay to blend with dark background */}
+                      <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, background: 'linear-gradient(to right, transparent 50%, rgba(13, 20, 38, 0.6) 100%)', pointerEvents: 'none' }} />
                     </div>
 
                     {/* Right: Text area & Info */}
@@ -704,22 +706,21 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                       display: 'flex', 
                       flexDirection: 'column', 
                       flexGrow: 1, 
-                      height: '100%', 
-                      justifyContent: 'space-between', 
-                      padding: '0.65rem 0.85rem 0.65rem 0.35rem', 
-                      minWidth: 0 
+                      padding: '0.75rem', 
+                      minWidth: 0,
+                      justifyContent: 'space-between',
+                      position: 'relative'
                     }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', minWidth: 0 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                         {/* Category Badge Capsule */}
                         <span 
                           style={{ 
-                            fontSize: '0.58rem', 
-                            color: 'var(--primary)', 
-                            background: 'rgba(99, 102, 241, 0.08)',
-                            border: '1px solid rgba(99, 102, 241, 0.15)',
-                            padding: '0.1rem 0.4rem',
+                            fontSize: '0.55rem', 
+                            color: '#fff', 
+                            background: '#6366f1',
+                            padding: '0.15rem 0.4rem',
                             borderRadius: '4px',
-                            fontWeight: 750, 
+                            fontWeight: 800, 
                             textTransform: 'uppercase', 
                             letterSpacing: '0.5px',
                             alignSelf: 'flex-start'
@@ -728,30 +729,29 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                           {product.categories?.name || 'Ferretería'}
                         </span>
                         
-                        <div className="pos-product-name" style={{ fontSize: '0.85rem', fontWeight: 750, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '0.15rem' }}>
+                        <div className="pos-product-name" style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '0.2rem' }}>
                           {product.name}
                         </div>
                         
-                        <div className="pos-product-code" style={{ fontSize: '0.62rem', color: 'var(--text-secondary)' }}>
+                        <div className="pos-product-code" style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
                           {product.barcode || 'Sin Código'}
                         </div>
                       </div>
                       
                       {/* Price and Stock row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '1.08rem', fontWeight: 800, color: 'var(--success)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: 'auto' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#10b981' }}>
                           S/ {Number(product.sale_price).toFixed(2)}
                         </span>
                         <span 
-                          className={`badge ${isOut ? 'badge-danger' : isLow ? 'badge-warning' : 'badge-success'}`}
                           style={{ 
-                            padding: '0.15rem 0.45rem', 
-                            fontSize: '0.62rem', 
-                            fontWeight: 650, 
-                            borderRadius: '6px', 
-                            background: isOut ? 'rgba(239,68,68,0.1)' : isLow ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.1)',
-                            color: isOut ? 'var(--danger)' : isLow ? 'var(--warning)' : 'var(--success)',
-                            border: isOut ? '1px solid rgba(239,68,68,0.2)' : isLow ? '1px solid rgba(245,158,11,0.2)' : '1px solid rgba(16,185,129,0.2)',
+                            padding: '0.15rem 0.4rem', 
+                            fontSize: '0.6rem', 
+                            fontWeight: 700, 
+                            borderRadius: '99px', 
+                            background: isOut ? 'rgba(239,68,68,0.1)' : isLow ? 'rgba(245,158,11,0.1)' : 'transparent',
+                            color: isOut ? 'var(--danger)' : isLow ? 'var(--warning)' : '#fbbf24',
+                            border: isOut ? '1px solid rgba(239,68,68,0.3)' : isLow ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(251, 191, 36, 0.4)',
                             whiteSpace: 'nowrap' 
                           }}
                         >
@@ -770,17 +770,15 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
                           width: '24px', 
                           height: '24px', 
                           borderRadius: '50%', 
-                          background: 'rgba(99, 102, 241, 0.15)', 
-                          border: '1px solid rgba(99, 102, 241, 0.25)', 
-                          color: 'var(--primary)', 
+                          background: '#6366f1', 
+                          color: '#fff', 
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'center',
-                          fontSize: '0.9rem',
-                          fontWeight: 800
+                          boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)'
                         }}
                       >
-                        <Plus size={14} />
+                        <Plus size={16} />
                       </div>
                     )}
                   </div>
