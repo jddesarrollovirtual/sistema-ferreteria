@@ -293,12 +293,12 @@ function ResumenView({ products, logs, setInventorySubTab }) {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(val) => val >= 1000 ? \`\${(val/1000).toFixed(0)}K\` : val} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(val) => val >= 1000 ? `${(val/1000).toFixed(0)}K` : val} />
                 <RechartsTooltip 
                   contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
                   itemStyle={{ color: '#fff', fontSize: '0.8rem' }}
                   labelStyle={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: '0.2rem' }}
-                  formatter={(value) => [\`S/ \${value.toLocaleString()}\`, 'Valor']}
+                  formatter={(value) => [`S/ ${value.toLocaleString()}`, 'Valor']}
                 />
                 <Area type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
               </AreaChart>
@@ -323,10 +323,10 @@ function ResumenView({ products, logs, setInventorySubTab }) {
                   stroke="none"
                 >
                   {pieData.map((entry, index) => (
-                    <Cell key={\`cell-\${index}\`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <RechartsTooltip formatter={(value) => \`S/ \${value.toLocaleString()}\`} contentStyle={{ background: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '0.8rem' }} />
+                <RechartsTooltip formatter={(value) => `S/ ${value.toLocaleString()}`} contentStyle={{ background: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '0.8rem' }} />
               </PieChart>
             </ResponsiveContainer>
             <div style={{ width: '50%', paddingLeft: '1rem' }}>
