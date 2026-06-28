@@ -256,46 +256,15 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
         .order('name');
       if (prodError) throw prodError;
 
-      // Database now has image_url, brand, tax, unit, status columns
       setProducts(prodData || []);
       setDbError(false);
     } catch (error) {
       console.error('Error fetching catalog, loading mock database:', error);
       addNotification(`Error de Base de Datos: ${error.message || 'No se pudo conectar'}. Usando modo simulación.`, 'error');
       setDbError(true);
-      setCategories([
-        { id: 1, name: 'Herramientas' },
-        { id: 2, name: 'Adhesivos' },
-        { id: 3, name: 'Tornillos' },
-        { id: 4, name: 'Pinturas' },
-      ]);
-      setSuppliers([
-        { id: 1, name: 'Distribuidora Stanley Perú' },
-        { id: 2, name: 'Corporación CPP' },
-      ]);
-
-      const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
-      const erpMetadata = JSON.parse(localStorage.getItem('ferre_product_erp_metadata') || '{}');
-
-      const mockProducts = [
-        { id: 1, barcode: '77510203040', name: 'Martillo Stanley 16oz', description: 'Martillo uña curva profesional', stock: 15, cost_price: 18.00, sale_price: 25.00, category_id: 1, categories: { name: 'Herramientas' }, supplier_id: 1, suppliers: { name: 'Distribuidora Stanley Perú' } },
-        { id: 2, barcode: '77510203041', name: 'Pegamento Epóxico 50ml', description: 'Adhesivo de alta resistencia extra fuerte', stock: 8, cost_price: 10.00, sale_price: 20.00, category_id: 2, categories: { name: 'Adhesivos' }, supplier_id: 1, suppliers: { name: 'Distribuidora Stanley Perú' } },
-        { id: 3, barcode: '77510203042', name: 'Wincha Stanley 5m', description: 'Cinta métrica profesional con seguro', stock: 5, cost_price: 12.00, sale_price: 18.00, category_id: 1, categories: { name: 'Herramientas' }, supplier_id: 1, suppliers: { name: 'Distribuidora Stanley Perú' } },
-        { id: 4, barcode: '77510203043', name: 'Tornillo Drywall 2"', description: 'Tornillo para drywall caja 100u', stock: 100, cost_price: 0.18, sale_price: 0.35, category_id: 3, categories: { name: 'Tornillos' }, supplier_id: 2, suppliers: { name: 'Corporación CPP' } },
-        { id: 5, barcode: '77510203044', name: 'Pintura Látex Blanca 1L', description: 'Pintura interior mate lavable', stock: 12, cost_price: 16.00, sale_price: 28.00, category_id: 4, categories: { name: 'Pinturas' }, supplier_id: 2, suppliers: { name: 'Corporación CPP' } },
-        { id: 6, barcode: '77510203045', name: 'Taladro Inalámbrico 20V', description: 'Taladro percutor con maletín DeWalt', stock: 4, cost_price: 350.00, sale_price: 520.00, category_id: 1, categories: { name: 'Herramientas' }, supplier_id: 1, suppliers: { name: 'Distribuidora Stanley Perú' } }
-      ].map((p) => {
-        const meta = erpMetadata[p.id] || {};
-        return {
-          ...p,
-          image_url: localImages[p.id] || null,
-          brand: meta.brand || (p.name.includes('Stanley') ? 'Stanley' : p.name.includes('DeWalt') ? 'DeWalt' : 'Generico'),
-          tax: meta.tax || '18%',
-          unit: meta.unit || 'Unidad',
-          status: meta.status || 'Activo'
-        };
-      });
-      setProducts(mockProducts);
+      setCategories([]);
+      setSuppliers([]);
+      setProducts([]);
     } finally {
       setLoading(false);
     }

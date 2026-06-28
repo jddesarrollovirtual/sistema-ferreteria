@@ -171,35 +171,20 @@ export default function Dashboard({ setActiveTab }) {
       setPaymentDistribution(paymentData);
       setTopProducts(topProductsData);
     } catch (error) {
-      console.error('Error fetching dashboard data, activating fallback simulation:', error);
+      console.error('Error fetching dashboard data:', error);
       setDbError(true);
       
-      const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
-      // Fallback with rich visual mock data matching mockup figures exactly
       setStats({
-        totalSales: 50.00,
-        salesCount: 2,
-        lowStockCount: 1,
-        totalProducts: 12,
-        totalSoldQty: 2,
+        totalSales: 0,
+        salesCount: 0,
+        lowStockCount: 0,
+        totalProducts: 0,
+        totalSoldQty: 0,
       });
-      setLowStockProducts([
-        { id: 1, name: 'MARTILLO ROJO', stock: 3, min_stock: 5, sale_price: 25.00 },
-      ]);
-      setRecentSales([
-        { id: 201, customer_name: 'JOSE DANIEL', total: 25.00, payment_method: 'efectivo', created_at: '2026-06-28T00:57:00Z' },
-        { id: 202, customer_name: 'Cliente General', total: 25.00, payment_method: 'yape_plin', created_at: '2026-06-28T00:35:00Z' },
-        { id: 203, customer_name: 'MARIA RODRIGUEZ', total: 120.00, payment_method: 'tarjeta', created_at: '2026-06-27T23:40:00Z' },
-      ]);
-      setPaymentDistribution([
-        { method: 'Efectivo', pct: 50, color: '#10b981', amount: 'S/ 25.00' },
-        { method: 'Yape / Plin', pct: 50, color: '#a855f7', amount: 'S/ 25.00' },
-        { method: 'Tarjeta', pct: 0, color: '#6366f1', amount: 'S/ 0.00' },
-        { method: 'Transferencia', pct: 0, color: '#f59e0b', amount: 'S/ 0.00' }
-      ]);
-      setTopProducts([
-        { name: 'MARTILLO ROJO', sales: 2, stock: 3, profit: 'S/ 50.00', image_url: localImages[1] || null },
-      ]);
+      setLowStockProducts([]);
+      setRecentSales([]);
+      setPaymentDistribution([]);
+      setTopProducts([]);
     } finally {
       setLoading(false);
     }
