@@ -497,8 +497,8 @@ function ExistenciasView({ products, branches }) {
   
   // Filtrado simple por texto
   const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(localSearch.toLowerCase()) || 
-    (p.barcode && p.barcode.toLowerCase().includes(localSearch.toLowerCase()))
+    ((p.name || '').toLowerCase()).includes((localSearch || '').toLowerCase()) || 
+    ((p.barcode || '').toLowerCase()).includes((localSearch || '').toLowerCase())
   );
 
   return (
