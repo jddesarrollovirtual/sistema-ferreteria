@@ -444,7 +444,7 @@ function ResumenView({ products, logs, setInventorySubTab }) {
       </div>
 
       {/* 5. FOOTER ALERTAS IMPORTANTES */}
-      <div className="glass-panel" style={{ padding: '1rem 1.5rem', borderRadius: '12px', borderLeft: '4px solid #f59e0b', display: 'flex', alignItems: 'center', gap: '2rem', marginTop: '0.5rem' }}>
+      <div className="glass-panel" style={{ padding: '1rem 1.5rem', borderRadius: '12px', borderLeft: '4px solid #f59e0b', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '2rem', marginTop: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <AlertTriangle size={24} color="#f59e0b" />
           <div>
