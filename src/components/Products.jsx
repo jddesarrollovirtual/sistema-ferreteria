@@ -453,9 +453,8 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
       setSelectedProduct(null);
       fetchInitialData();
     } catch (error) {
-      setProducts(products.filter(p => p.id !== product.id));
-      setSelectedProduct(null);
-      addNotification('Producto eliminado (Simulado).', 'success');
+      console.error('Error deleting product:', error);
+      addNotification(`Error al eliminar: ${error.message || 'El producto puede estar vinculado a una venta.'}`, 'error');
     } finally {
       setLoading(false);
     }
