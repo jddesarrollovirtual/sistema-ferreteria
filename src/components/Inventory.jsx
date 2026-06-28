@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Package, Box, AlertTriangle, AlertCircle, History, ArrowRightLeft, Settings2, Plus, 
-  Search, Filter, Download, ArrowUpDown, ChevronLeft, ChevronRight, CheckCircle, TrendingUp, TrendingDown, ChevronDown 
+  Search, Filter, Download, ArrowUpDown, ChevronLeft, ChevronRight, CheckCircle, TrendingUp, TrendingDown, ChevronDown,
+  Calendar, RefreshCw, ShoppingCart, ShoppingBag, ArrowUpRight, ArrowDownRight, AlertOctagon 
 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { getProductImage } from './POS';
 
 // Constantes globales de Sucursales simuladas
@@ -94,113 +96,397 @@ export default function Inventory({ inventorySubTab, setInventorySubTab, addNoti
 // 1. VISTA DE RESUMEN
 // ==========================================
 function ResumenView({ products, logs, setInventorySubTab }) {
-  // Calcular métricas
+  // 1. Calcular métricas principales
   let valorTotal = 0;
   let productosConStock = 0;
-  let stockBajo = 0; // Menor a 15 unidades totales
+  let stockBajo = 0;
   let sinStock = 0;
+  
+  // Para el donut chart
+  const branchValues = { Principal: 0, Chiclayo: 0, Piura: 0, Trujillo: 0 };
+  
+  // Listas de detalles
+  const lowStockProducts = [];
+  const outOfStockProducts = [];
 
   products.forEach(p => {
     let totalStock = 0;
     if (p.branch_stock) {
-      Object.values(p.branch_stock).forEach(val => totalStock += val);
+      Object.entries(p.branch_stock).forEach(([bName, bQty]) => {
+        totalStock += bQty;
+        branchValues[bName] += (bQty * (Number(p.cost_price) || 0));
+        
+        // Determinar bajos/agotados por sucursal
+        if (bQty === 0) {
+          outOfStockProducts.push({ ...p, branch: bName, qty: 0 });
+        } else if (bQty <= 15) { // Stock bajo simulado en 15
+          lowStockProducts.push({ ...p, branch: bName, qty: bQty, min: 20 });
+        }
+      });
     }
     
     valorTotal += (totalStock * (Number(p.cost_price) || 0));
     
-    if (totalStock === 0) {
-      sinStock++;
-    } else if (totalStock < 15) {
-      stockBajo++;
-      productosConStock++;
-    } else {
-      productosConStock++;
-    }
+    if (totalStock === 0) sinStock++;
+    else if (totalStock < 15) stockBajo++;
+    
+    if (totalStock > 0) productosConStock++;
   });
 
+  const movHoy = logs.filter(l => new Date(l.date).toDateString() === new Date().toDateString()).length;
+
+  // 2. Data para Gráfico de Líneas (6 meses mock)
+  const areaData = [
+    { name: 'Ene 2026', value: valorTotal * 0.4 },
+    { name: 'Feb 2026', value: valorTotal * 0.55 },
+    { name: 'Mar 2026', value: valorTotal * 0.6 },
+    { name: 'Abr 2026', value: valorTotal * 0.75 },
+    { name: 'May 2026', value: valorTotal * 0.8 },
+    { name: 'Jun 2026', value: valorTotal },
+  ];
+
+  // 3. Data para Donut Chart
+  const COLORS = ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
+  const pieData = Object.entries(branchValues)
+    .filter(([_, val]) => val > 0)
+    .map(([name, value]) => ({ name, value }));
+
+  // Helper para custom legend de PieChart
+  const CustomLegend = ({ payload }) => {
+    return (
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+        {payload.map((entry, index) => (
+          <li key={`item-${index}`} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: entry.color }} />
+              Sucursal {entry.value}
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <span style={{ color: '#fff' }}>S/ {pieData[index].value.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              <span style={{ color: 'var(--text-muted)' }}>{Math.round((pieData[index].value / valorTotal) * 100)}%</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Tarjetas de Resumen Numérico */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      
+      {/* 1. HEADER DEL RESUMEN */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#fff', margin: 0 }}>Resumen de Inventario</h2>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, marginTop: '0.2rem' }}>Vista general del estado actual del inventario en todas las sucursales.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div className="glass-panel" style={{ padding: '0.4rem 1rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            <Calendar size={14} /> 27/06/2026 10:45 a.m.
+          </div>
+          <button className="btn btn-secondary" style={{ padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <RefreshCw size={14} /> Actualizar
+          </button>
+        </div>
+      </div>
+
+      {/* 2. TARJETAS SUPERIORES (5 Métricas) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
+        {/* Valor Total */}
         <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', background: 'linear-gradient(145deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.9) 100%)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Valor total del inventario</p>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', marginTop: '0.25rem' }}>S/ {valorTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h2>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '0.8rem', borderRadius: '12px' }}>
+              <Box style={{ color: '#3b82f6' }} size={24} />
             </div>
-            <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '0.6rem', borderRadius: '10px' }}>
-              <Box style={{ color: '#3b82f6' }} size={22} />
+            <div>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Valor total del inventario</p>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: '0.1rem 0' }}>S/ {valorTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h2>
+              <p style={{ fontSize: '0.65rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 600 }}>
+                +12.5% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>vs mes anterior</span>
+              </p>
             </div>
           </div>
-          <p style={{ fontSize: '0.7rem', color: 'var(--success)', marginTop: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 600 }}>
-            <TrendingUp size={12} /> +12.5% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>vs mes anterior</span>
-          </p>
         </div>
 
+        {/* Productos con Stock */}
         <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Productos con stock</p>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', marginTop: '0.25rem' }}>{productosConStock.toLocaleString()}</h2>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '0.8rem', borderRadius: '12px' }}>
+              <Package style={{ color: '#10b981' }} size={24} />
             </div>
-            <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '0.6rem', borderRadius: '10px' }}>
-              <Package style={{ color: '#10b981' }} size={22} />
+            <div>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Productos con stock</p>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: '0.1rem 0' }}>{productosConStock.toLocaleString()}</h2>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{Math.round((productosConStock/Math.max(products.length, 1))*100)}% del total</p>
             </div>
           </div>
-          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.85rem' }}>{Math.round((productosConStock/Math.max(products.length, 1))*100)}% del total de catálogo</p>
         </div>
 
+        {/* Stock Bajo */}
         <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Stock bajo</p>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', marginTop: '0.25rem' }}>{stockBajo}</h2>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '0.8rem', borderRadius: '12px' }}>
+              <AlertTriangle style={{ color: '#f59e0b' }} size={24} />
             </div>
-            <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '0.6rem', borderRadius: '10px' }}>
-              <AlertTriangle style={{ color: '#f59e0b' }} size={22} />
+            <div>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Stock bajo</p>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: '0.1rem 0' }}>{stockBajo}</h2>
+              <p style={{ fontSize: '0.65rem', color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 600 }}>
+                -8% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>vs mes anterior</span>
+              </p>
             </div>
           </div>
-          <p style={{ fontSize: '0.7rem', color: 'var(--warning)', marginTop: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 600 }}>
-            <TrendingDown size={12} /> -8% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>vs mes anterior</span>
-          </p>
         </div>
 
+        {/* Agotados */}
         <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sin stock</p>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', marginTop: '0.25rem' }}>{sinStock}</h2>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.8rem', borderRadius: '12px' }}>
+              <Box style={{ color: '#ef4444' }} size={24} />
             </div>
-            <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.6rem', borderRadius: '10px' }}>
-              <AlertCircle style={{ color: '#ef4444' }} size={22} />
+            <div>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Productos agotados</p>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: '0.1rem 0' }}>{sinStock}</h2>
+              <p style={{ fontSize: '0.65rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 600 }}>
+                +5% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>vs mes anterior</span>
+              </p>
             </div>
           </div>
-          <p style={{ fontSize: '0.7rem', color: 'var(--danger)', marginTop: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 600 }}>
-            <TrendingUp size={12} /> +5% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>vs mes anterior</span>
-          </p>
+        </div>
+
+        {/* Movimientos Hoy */}
+        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.2)' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '0.8rem', borderRadius: '12px' }}>
+              <ArrowRightLeft style={{ color: '#38bdf8' }} size={24} />
+            </div>
+            <div>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Movimientos hoy</p>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: '0.1rem 0' }}>{movHoy}</h2>
+              <p style={{ fontSize: '0.65rem', color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 600 }}>
+                +18% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>vs ayer</span>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginTop: '1rem' }}>
-        <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '12px' }}>
-           <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-             Últimos Movimientos Registrados
-             <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.8rem', borderRadius: '6px' }} onClick={() => setInventorySubTab('movimientos')}>Ver Todos</button>
-           </h3>
-           
-           {logs.length === 0 ? (
-             <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px' }}>
-               <History size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-               <p>No se han registrado movimientos recientes de inventario.</p>
-             </div>
-           ) : (
-             <div style={{ overflowX: 'auto' }}>
-               {/* Aquí renderizaremos la tabla reducida de movimientos posteriormente */}
-               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Lista de movimientos (Próximamente...)</p>
-             </div>
-           )}
+      {/* 3. GRÁFICOS */}
+      <div style={{ display: 'flex', gap: '1rem', height: '300px' }}>
+        {/* Line Chart */}
+        <div className="glass-panel" style={{ flex: '6', padding: '1.25rem', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', margin: 0 }}>Valor del inventario (Últimos 6 meses)</h3>
+            <select className="form-input" style={{ padding: '0.2rem 0.8rem', fontSize: '0.7rem', height: 'auto', background: 'rgba(0,0,0,0.2)' }}>
+              <option>6 meses</option>
+              <option>1 año</option>
+            </select>
+          </div>
+          <div style={{ flexGrow: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={areaData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(val) => val >= 1000 ? \`\${(val/1000).toFixed(0)}K\` : val} />
+                <RechartsTooltip 
+                  contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                  itemStyle={{ color: '#fff', fontSize: '0.8rem' }}
+                  labelStyle={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: '0.2rem' }}
+                  formatter={(value) => [\`S/ \${value.toLocaleString()}\`, 'Valor']}
+                />
+                <Area type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Donut Chart */}
+        <div className="glass-panel" style={{ flex: '4', padding: '1.25rem', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', marginBottom: '1rem', margin: 0 }}>Distribución del inventario por sucursal</h3>
+          <div style={{ flexGrow: 1, minHeight: 0, display: 'flex', alignItems: 'center' }}>
+            <ResponsiveContainer width="50%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={\`cell-\${index}\`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <RechartsTooltip formatter={(value) => \`S/ \${value.toLocaleString()}\`} contentStyle={{ background: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '0.8rem' }} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{ width: '50%', paddingLeft: '1rem' }}>
+              <CustomLegend payload={pieData.map((entry, i) => ({ ...entry, color: COLORS[i % COLORS.length] }))} />
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* 4. LISTAS (3 Columnas) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+        
+        {/* Últimos Movimientos */}
+        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', height: '350px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', margin: 0 }}>Últimos movimientos</h3>
+            <button className="btn btn-secondary" style={{ fontSize: '0.65rem', padding: '0.2rem 0.6rem' }} onClick={() => setInventorySubTab('movimientos')}>Ver todos</button>
+          </div>
+          <div style={{ overflowY: 'auto', flexGrow: 1, paddingRight: '0.5rem' }} className="custom-scrollbar">
+            {logs.length === 0 ? <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Sin registros.</p> : logs.slice(0, 10).map((log, i) => {
+              const isEntry = log.quantity > 0;
+              const isTransfer = log.type.includes('Transferencia');
+              const isAdjust = log.type.includes('Ajuste');
+              
+              let Icon = ShoppingCart;
+              let bgColor = 'rgba(16,185,129,0.1)';
+              let iconColor = '#10b981';
+              let title = 'COMPRA';
+              
+              if (log.quantity < 0 && !isTransfer && !isAdjust) {
+                Icon = ShoppingBag; bgColor = 'rgba(16,185,129,0.1)'; iconColor = '#10b981'; title = 'VENTA';
+              } else if (isTransfer) {
+                Icon = ArrowRightLeft; bgColor = 'rgba(139,92,246,0.1)'; iconColor = '#8b5cf6'; title = 'TRANSFERENCIA';
+              } else if (isAdjust) {
+                Icon = Settings2; bgColor = 'rgba(245,158,11,0.1)'; iconColor = '#f59e0b'; title = 'AJUSTE';
+              }
+
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: bgColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={16} color={iconColor} />
+                  </div>
+                  <div style={{ flexGrow: 1, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.6rem', fontWeight: 700, color: iconColor }}>{title} <span style={{ color: 'var(--text-muted)' }}>{log.id.substring(0,8)}</span></span>
+                      <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{new Date(log.date).toLocaleTimeString('es-PE', {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: '#fff', margin: '0.1rem 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.product_name}</p>
+                  </div>
+                  <div style={{ textAlign: 'right', minWidth: '40px', flexShrink: 0 }}>
+                    <p style={{ fontSize: '0.8rem', fontWeight: 700, color: isEntry ? '#10b981' : '#ef4444', margin: 0 }}>
+                      {isEntry ? '+' : ''}{log.quantity}
+                    </p>
+                    <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', margin: 0 }}>{log.branch}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Stock Bajo */}
+        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', height: '350px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', margin: 0 }}>Productos con stock bajo</h3>
+            <button className="btn btn-secondary" style={{ fontSize: '0.65rem', padding: '0.2rem 0.6rem' }} onClick={() => setInventorySubTab('existencias')}>Ver todos</button>
+          </div>
+          
+          <div style={{ display: 'flex', fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem', paddingBottom: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <span style={{ flex: '4' }}>Producto</span>
+            <span style={{ flex: '2' }}>Sucursal</span>
+            <span style={{ flex: '2', textAlign: 'center' }}>Stock Actual</span>
+            <span style={{ flex: '2', textAlign: 'center' }}>Stock Mínimo</span>
+          </div>
+
+          <div style={{ overflowY: 'auto', flexGrow: 1, paddingRight: '0.5rem' }} className="custom-scrollbar">
+            {lowStockProducts.length === 0 ? <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Todo en orden.</p> : lowStockProducts.slice(0, 15).map((p, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                <div style={{ flex: '4', display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
+                  <img src={getProductImage(p)} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.75rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
+                </div>
+                <div style={{ flex: '2', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.branch}</div>
+                <div style={{ flex: '2', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#ef4444' }}>{p.qty}</div>
+                <div style={{ flex: '2', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.min}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Agotados */}
+        <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', height: '350px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', margin: 0 }}>Productos agotados</h3>
+            <button className="btn btn-secondary" style={{ fontSize: '0.65rem', padding: '0.2rem 0.6rem' }} onClick={() => setInventorySubTab('existencias')}>Ver todos</button>
+          </div>
+          
+          <div style={{ display: 'flex', fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem', paddingBottom: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <span style={{ flex: '5' }}>Producto</span>
+            <span style={{ flex: '3' }}>Sucursal</span>
+          </div>
+
+          <div style={{ overflowY: 'auto', flexGrow: 1, paddingRight: '0.5rem' }} className="custom-scrollbar">
+            {outOfStockProducts.length === 0 ? <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Ninguno agotado.</p> : outOfStockProducts.slice(0, 15).map((p, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                <div style={{ flex: '5', display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
+                  <img src={getProductImage(p)} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.75rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
+                </div>
+                <div style={{ flex: '3', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.branch}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 5. FOOTER ALERTAS IMPORTANTES */}
+      <div className="glass-panel" style={{ padding: '1rem 1.5rem', borderRadius: '12px', borderLeft: '4px solid #f59e0b', display: 'flex', alignItems: 'center', gap: '2rem', marginTop: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <AlertTriangle size={24} color="#f59e0b" />
+          <div>
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', margin: 0 }}>Alertas importantes</h3>
+          </div>
+        </div>
+        
+        <div style={{ display: 'flex', flexGrow: 1, justifyContent: 'space-between', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', borderRadius: '4px', padding: '0.3rem' }}><AlertOctagon size={14} color="#ef4444" /></div>
+            <div>
+              <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>{stockBajo} productos</p>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)' }}>Con stock bajo</p>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', borderRadius: '4px', padding: '0.3rem' }}><AlertOctagon size={14} color="#ef4444" /></div>
+            <div>
+              <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>{sinStock} productos</p>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)' }}>Agotados</p>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', borderRadius: '4px', padding: '0.3rem' }}><AlertOctagon size={14} color="#ef4444" /></div>
+            <div>
+              <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>S/ 22,450.30</p>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)' }}>En productos de baja rotación</p>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ background: 'rgba(245, 158, 11, 0.1)', borderRadius: '4px', padding: '0.3rem' }}><AlertTriangle size={14} color="#f59e0b" /></div>
+            <div>
+              <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>4 sucursales</p>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)' }}>Con stock crítico</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
