@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Package, Box, AlertTriangle, AlertCircle, History, ArrowRightLeft, Settings2, Plus, 
-  Search, Filter, Download, ArrowUpDown, ChevronLeft, ChevronRight, CheckCircle, TrendingUp, TrendingDown 
+  Search, Filter, Download, ArrowUpDown, ChevronLeft, ChevronRight, CheckCircle, TrendingUp, TrendingDown, ChevronDown 
 } from 'lucide-react';
 import { getProductImage } from './POS';
 
