@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Package, Box, AlertTriangle, AlertCircle, History, ArrowRightLeft, Settings2, Plus, 
   Search, Filter, Download, ArrowUpDown, ChevronLeft, ChevronRight, CheckCircle, TrendingUp, TrendingDown, ChevronDown,
-  Calendar, RefreshCw, ShoppingCart, ShoppingBag, ArrowUpRight, ArrowDownRight, AlertOctagon 
+  Calendar, RefreshCw, ShoppingCart, ShoppingBag, ArrowUpRight, ArrowDownRight, AlertOctagon, Eye, X 
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { getProductImage } from './POS';
@@ -486,167 +486,363 @@ function ResumenView({ products, logs, setInventorySubTab }) {
   );
 }
 
-// Placeholders for other views
 function ExistenciasView({ products, branches }) {
   const [localSearch, setLocalSearch] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(null);
   
-  // Filtrado simple por texto
+  // Métricas
+  const totalProductos = products.length;
+  let productosConStock = 0;
+  let stockBajo = 0;
+  let sinStock = 0;
+  let valorTotalInventario = 0;
+
+  products.forEach(p => {
+    let totalStock = 0;
+    if (p.branch_stock) {
+      Object.values(p.branch_stock).forEach(v => totalStock += v);
+    }
+    if (totalStock > 0) productosConStock++;
+    if (totalStock === 0) sinStock++;
+    else if (totalStock < 15) stockBajo++;
+    
+    valorTotalInventario += (totalStock * (Number(p.cost_price) || 0));
+  });
+
   const filteredProducts = products.filter(p => 
     ((p.name || '').toLowerCase()).includes((localSearch || '').toLowerCase()) || 
     ((p.barcode || '').toLowerCase()).includes((localSearch || '').toLowerCase())
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flexGrow: 1, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', gap: '1.5rem', flexGrow: 1, overflow: 'hidden' }}>
       
-      {/* Barra de Filtros */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-        <div style={{ flexGrow: 1, minWidth: '200px' }}>
-          <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' }}>Sucursal</label>
-          <div style={{ position: 'relative' }}>
-            <select className="form-input" style={{ width: '100%', height: '36px', padding: '0 1rem', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
-              <option value="todas">Todas las sucursales</option>
-              {branches.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
-            <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '11px', color: 'var(--text-muted)' }} />
-          </div>
-        </div>
+      {/* COLUMNA IZQUIERDA: Tabla y Controles */}
+      <div style={{ flex: selectedProduct ? '0 0 calc(100% - 370px)' : '1', display: 'flex', flexDirection: 'column', gap: '1.25rem', overflow: 'hidden', transition: 'flex 0.3s ease' }}>
         
-        <div style={{ flexGrow: 1, minWidth: '150px' }}>
-          <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' }}>Categoría</label>
-          <div style={{ position: 'relative' }}>
-            <select className="form-input" style={{ width: '100%', height: '36px', padding: '0 1rem', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
-              <option value="todas">Todas las categorías</option>
-            </select>
-            <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '11px', color: 'var(--text-muted)' }} />
+        {/* Cabecera Título */}
+        <div>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#fff', margin: 0 }}>Existencias por Sucursal</h2>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, marginTop: '0.2rem' }}>Consulta las existencias actuales de cada producto en todas las sucursales.</p>
+        </div>
+
+        {/* Tarjetas Superiores */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
+          {/* Total Productos */}
+          <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '0.8rem', borderRadius: '12px' }}>
+                <Package style={{ color: '#6366f1' }} size={24} />
+              </div>
+              <div>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Total productos</p>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: '0.1rem 0' }}>{totalProductos.toLocaleString()}</h2>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>100% del catálogo</p>
+              </div>
+            </div>
+          </div>
+          {/* Con stock */}
+          <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '0.8rem', borderRadius: '12px' }}>
+                <Box style={{ color: '#10b981' }} size={24} />
+              </div>
+              <div>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Con stock</p>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: '0.1rem 0' }}>{productosConStock.toLocaleString()}</h2>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{Math.round((productosConStock/Math.max(products.length, 1))*100)}% del total</p>
+              </div>
+            </div>
+          </div>
+          {/* Stock Bajo */}
+          <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '0.8rem', borderRadius: '12px' }}>
+                <AlertTriangle style={{ color: '#f59e0b' }} size={24} />
+              </div>
+              <div>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Stock bajo</p>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: '0.1rem 0' }}>{stockBajo}</h2>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{Math.round((stockBajo/Math.max(products.length, 1))*100)}% del total</p>
+              </div>
+            </div>
+          </div>
+          {/* Sin stock */}
+          <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.8rem', borderRadius: '12px' }}>
+                <Box style={{ color: '#ef4444' }} size={24} />
+              </div>
+              <div>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Sin stock</p>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: '0.1rem 0' }}>{sinStock}</h2>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{Math.round((sinStock/Math.max(products.length, 1))*100)}% del total</p>
+              </div>
+            </div>
+          </div>
+          {/* Valor Total */}
+          <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', background: 'linear-gradient(145deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.9) 100%)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '0.8rem', borderRadius: '12px' }}>
+                <Box style={{ color: '#3b82f6' }} size={24} />
+              </div>
+              <div>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Valor total del inventario</p>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', margin: '0.1rem 0' }}>S/ {valorTotalInventario.toLocaleString('en-US', { minimumFractionDigits: 2 })}</h2>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Costo actual</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div style={{ flexGrow: 1, minWidth: '150px' }}>
-          <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' }}>Estado de stock</label>
-          <div style={{ position: 'relative' }}>
-            <select className="form-input" style={{ width: '100%', height: '36px', padding: '0 1rem', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
-              <option value="todos">Todos</option>
-              <option value="bajo">Stock Bajo</option>
-              <option value="agotado">Sin Stock</option>
-            </select>
-            <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '11px', color: 'var(--text-muted)' }} />
+        {/* Barra de Filtros */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap', paddingBottom: '0.5rem' }}>
+          <div style={{ flexGrow: 1, minWidth: '150px' }}>
+            <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' }}>Sucursal</label>
+            <div style={{ position: 'relative' }}>
+              <select className="form-input" style={{ width: '100%', height: '36px', padding: '0 1rem', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
+                <option value="todas">Todas las sucursales</option>
+                {branches.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+              <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '11px', color: 'var(--text-muted)' }} />
+            </div>
           </div>
+          
+          <div style={{ flexGrow: 1, minWidth: '150px' }}>
+            <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' }}>Categoría</label>
+            <div style={{ position: 'relative' }}>
+              <select className="form-input" style={{ width: '100%', height: '36px', padding: '0 1rem', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
+                <option value="todas">Todas las categorías</option>
+              </select>
+              <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '11px', color: 'var(--text-muted)' }} />
+            </div>
+          </div>
+
+          <div style={{ flexGrow: 1, minWidth: '150px' }}>
+            <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' }}>Marca</label>
+            <div style={{ position: 'relative' }}>
+              <select className="form-input" style={{ width: '100%', height: '36px', padding: '0 1rem', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
+                <option value="todas">Todas las marcas</option>
+              </select>
+              <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '11px', color: 'var(--text-muted)' }} />
+            </div>
+          </div>
+
+          <div style={{ flexGrow: 2, minWidth: '250px' }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={16} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text-muted)' }} />
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="Buscar producto..." 
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                style={{ paddingLeft: '2.2rem', height: '36px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', width: '100%' }} 
+              />
+            </div>
+          </div>
+
+          <button className="btn btn-secondary" style={{ height: '36px', padding: '0 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <Filter size={14} /> Filtros
+          </button>
+          <button className="btn btn-secondary" style={{ height: '36px', padding: '0 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <Download size={14} /> Exportar
+          </button>
         </div>
 
-        <div style={{ flexGrow: 2, minWidth: '250px' }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={16} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text-muted)' }} />
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="Buscar producto..." 
-              value={localSearch}
-              onChange={(e) => setLocalSearch(e.target.value)}
-              style={{ paddingLeft: '2.2rem', height: '36px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)' }} 
-            />
-          </div>
-        </div>
-
-        <button className="btn btn-secondary" style={{ height: '36px', padding: '0 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Filter size={14} />
-        </button>
-        <button className="btn btn-secondary" style={{ height: '36px', padding: '0 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Download size={14} /> Exportar
-        </button>
-      </div>
-
-      {/* Tabla de Existencias */}
-      <div className="glass-panel" style={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRadius: '12px' }}>
-        <div style={{ overflowX: 'auto', flexGrow: 1 }}>
-          <table className="data-table" style={{ width: '100%', minWidth: '1000px', borderCollapse: 'collapse' }}>
-            <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-              <tr>
-                <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(10px)' }}>Producto</th>
-                <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(10px)' }}>Código</th>
-                <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(10px)' }}>Categoría</th>
-                
-                {/* Cabeceras de Sucursales Dinámicas */}
-                {branches.map(b => (
-                  <th key={b} style={{ textAlign: 'center', padding: '1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(10px)' }}>{b}</th>
-                ))}
-                
-                <th style={{ textAlign: 'center', padding: '1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(10px)' }}>Total</th>
-                <th style={{ textAlign: 'right', padding: '1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(10px)' }}>Valor Total</th>
-                <th style={{ width: '40px', background: 'rgba(15,23,42,0.95)' }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.length === 0 ? (
+        {/* Tabla de Existencias */}
+        <div className="glass-panel" style={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRadius: '12px', padding: 0 }}>
+          <div style={{ overflowX: 'auto', flexGrow: 1 }} className="custom-scrollbar">
+            <table className="data-table" style={{ width: '100%', minWidth: '1000px', borderCollapse: 'collapse' }}>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                 <tr>
-                  <td colSpan={6 + branches.length} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No se encontraron productos</td>
-                </tr>
-              ) : (
-                filteredProducts.map(p => {
-                  let totalStock = 0;
-                  if (p.branch_stock) {
-                    Object.values(p.branch_stock).forEach(v => totalStock += v);
-                  }
+                  <th rowSpan={2} style={{ textAlign: 'left', padding: '1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(10px)', verticalAlign: 'middle' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ArrowUpDown size={12} /> Producto</div>
+                  </th>
+                  <th rowSpan={2} style={{ textAlign: 'left', padding: '1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(10px)', verticalAlign: 'middle' }}>Código</th>
+                  <th rowSpan={2} style={{ textAlign: 'center', padding: '1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(10px)', verticalAlign: 'middle' }}>Unidad</th>
                   
-                  return (
-                    <tr key={p.id} className="table-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                      <td style={{ padding: '0.75rem 1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <img 
-                            src={p.image_url || getProductImage(p.name)} 
-                            alt={p.name} 
-                            style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover', background: 'rgba(0,0,0,0.2)' }} 
-                          />
-                          <div>
-                            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', margin: 0 }}>{p.name}</p>
-                            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: 0, marginTop: '2px', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.description || p.name}</p>
+                  {/* Agrupación Sucursales */}
+                  <th colSpan={branches.length} style={{ textAlign: 'center', padding: '0.5rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-primary)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)', fontWeight: 700 }}>
+                    Existencias por Sucursal
+                  </th>
+                  
+                  <th rowSpan={2} style={{ textAlign: 'center', padding: '1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-primary)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(10px)', verticalAlign: 'middle', fontWeight: 700 }}>Total</th>
+                  <th rowSpan={2} style={{ textAlign: 'center', padding: '1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-primary)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(10px)', verticalAlign: 'middle', fontWeight: 700 }}>Acción</th>
+                </tr>
+                <tr>
+                  {branches.map(b => (
+                    <th key={b} style={{ textAlign: 'center', padding: '0.5rem 1rem', fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.95)' }}>
+                      <div style={{ color: '#fff', fontWeight: 600 }}>{b.toUpperCase()}</div>
+                      <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '2px', textTransform: 'none' }}>
+                        {b === 'Principal' ? 'Tienda Central' : 'Sucursal'}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6 + branches.length} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No se encontraron productos</td>
+                  </tr>
+                ) : (
+                  filteredProducts.map((p, index) => {
+                    let totalStock = 0;
+                    if (p.branch_stock) {
+                      Object.values(p.branch_stock).forEach(v => totalStock += v);
+                    }
+                    
+                    const isSelected = selectedProduct && selectedProduct.id === p.id;
+                    
+                    return (
+                      <tr key={p.id} className="table-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: isSelected ? 'rgba(99, 102, 241, 0.05)' : (index % 2 === 0 ? 'rgba(0,0,0,0.1)' : 'transparent'), cursor: 'pointer' }} onClick={() => setSelectedProduct({...p, totalStock})}>
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <img 
+                              src={p.image_url || getProductImage(p.name)} 
+                              alt={p.name} 
+                              style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover', background: 'rgba(0,0,0,0.2)' }} 
+                            />
+                            <div>
+                              <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', margin: 0 }}>{p.name}</p>
+                              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: 0, marginTop: '2px' }}>{p.categories?.name || 'General'}</p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{p.barcode || 'N/A'}</td>
-                      <td style={{ padding: '0.75rem 1rem' }}>
-                        <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', borderRadius: '4px', border: '1px solid rgba(168, 85, 247, 0.2)' }}>
-                          {p.categories?.name || 'General'}
-                        </span>
-                      </td>
-                      
-                      {/* Celdas de Sucursales Dinámicas */}
-                      {branches.map(b => {
-                        const stock = p.branch_stock?.[b] || 0;
-                        let color = '#10b981'; // Green
-                        if (stock === 0) color = '#ef4444'; // Red
-                        else if (stock < 15) color = '#f59e0b'; // Yellow
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{p.barcode || 'N/A'}</td>
+                        <td style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center' }}>Und</td>
                         
-                        return (
-                          <td key={b} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.85rem', fontWeight: 600, color: color }}>
-                            {stock}
-                          </td>
-                        );
-                      })}
-                      
-                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.85rem', fontWeight: 800, color: '#fff' }}>
-                        {totalStock}
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                        S/ {(totalStock * (Number(p.cost_price) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.2rem', background: 'transparent', border: 'none' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'var(--text-muted)' }}></div>
-                            <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'var(--text-muted)' }}></div>
-                            <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'var(--text-muted)' }}></div>
-                          </div>
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                        {/* Celdas de Sucursales Dinámicas */}
+                        {branches.map(b => {
+                          const stock = p.branch_stock?.[b] || 0;
+                          let color = '#10b981'; // Green
+                          if (stock === 0) color = '#ef4444'; // Red
+                          else if (stock < 15) color = '#f59e0b'; // Yellow
+                          
+                          return (
+                            <td key={b} style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.85rem', fontWeight: 600, color: color }}>
+                              {stock}
+                            </td>
+                          );
+                        })}
+                        
+                        <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.85rem', fontWeight: 800, color: '#fff' }}>
+                          {totalStock}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                          <button 
+                            className="btn btn-secondary" 
+                            style={{ padding: '0.4rem', background: isSelected ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px' }}
+                            onClick={(e) => { e.stopPropagation(); setSelectedProduct({...p, totalStock}); }}
+                          >
+                            <Eye size={16} color={isSelected ? '#818cf8' : 'var(--text-secondary)'} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Footer Paginación Simulado */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(15,23,42,0.6)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Mostrando 1 a {Math.min(filteredProducts.length, 15)} de {filteredProducts.length} productos
+            </span>
+            <div style={{ display: 'flex', gap: '0.25rem' }}>
+              <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', background: 'rgba(255,255,255,0.02)' }}><ChevronLeft size={14} /></button>
+              <button className="btn btn-primary" style={{ padding: '0.3rem 0.75rem' }}>1</button>
+              <button className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', background: 'rgba(255,255,255,0.02)' }}>2</button>
+              <button className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', background: 'rgba(255,255,255,0.02)' }}>3</button>
+              <span style={{ padding: '0.3rem 0.5rem', color: 'var(--text-muted)' }}>...</span>
+              <button className="btn btn-secondary" style={{ padding: '0.3rem 0.75rem', background: 'rgba(255,255,255,0.02)' }}>{Math.ceil(filteredProducts.length / 15) || 1}</button>
+              <button className="btn btn-secondary" style={{ padding: '0.3rem 0.5rem', background: 'rgba(255,255,255,0.02)' }}><ChevronRight size={14} /></button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* PANEL LATERAL DERECHO */}
+      {selectedProduct && (
+        <div className="glass-panel" style={{ flex: '0 0 350px', padding: '0', display: 'flex', flexDirection: 'column', borderRadius: '12px', borderLeft: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,23,42,0.95)', overflow: 'hidden' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', margin: 0 }}>Detalle de Existencias</h3>
+            <button className="btn" style={{ padding: '0.3rem', background: 'transparent', border: 'none', color: 'var(--text-muted)' }} onClick={() => setSelectedProduct(null)}>
+              <X size={18} />
+            </button>
+          </div>
+
+          <div style={{ padding: '1.5rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <img 
+              src={selectedProduct.image_url || getProductImage(selectedProduct.name)} 
+              alt={selectedProduct.name} 
+              style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover', background: 'rgba(0,0,0,0.2)' }} 
+            />
+            <div>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', margin: '0 0 0.4rem 0' }}>{selectedProduct.name}</h4>
+              <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>Activo</span>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0.4rem 0 0 0' }}>Código: {selectedProduct.barcode || 'N/A'}</p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>Unidad: Unidad</p>
+            </div>
+          </div>
+
+          <div style={{ padding: '1.25rem', flexGrow: 1, overflowY: 'auto' }} className="custom-scrollbar">
+            <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', margin: '0 0 1rem 0' }}>Existencias por Sucursal</h4>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {branches.map(b => {
+                const stock = selectedProduct.branch_stock?.[b] || 0;
+                let color = '#10b981'; // Green
+                if (stock === 0) color = '#ef4444'; // Red
+                else if (stock < 15) color = '#f59e0b'; // Yellow
+                
+                return (
+                  <div key={b} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div>
+                      <p style={{ fontSize: '0.8rem', fontWeight: 600, color: '#fff', margin: '0 0 0.2rem 0' }}>{b === 'Principal' ? 'Tienda Central (Principal)' : `${b} (Sucursal)`}</p>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>Stock mínimo: {b === 'Principal' ? 20 : 10}</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: '0.85rem', fontWeight: 700, color: color, margin: '0 0 0.2rem 0' }}>{stock} unidades</p>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>Stock máximo: {b === 'Principal' ? 100 : 80}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ marginTop: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', margin: '0 0 0.5rem 0' }}>Total en todas las sucursales</p>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', margin: '0 0 0.5rem 0' }}>{selectedProduct.totalStock} unidades</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                <span>Stock mínimo total: 50</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                <span>Stock máximo total: 340</span>
+              </div>
+              
+              <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', margin: '0 0 0.3rem 0' }}>Valor total (costo)</p>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', margin: 0 }}>
+                S/ {(selectedProduct.totalStock * (Number(selectedProduct.cost_price) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </h3>
+            </div>
+          </div>
+
+          <div style={{ padding: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <button className="btn btn-secondary" style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)', color: '#818cf8', fontWeight: 600 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <History size={16} /> Ver movimientos del producto
+              </div>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }
