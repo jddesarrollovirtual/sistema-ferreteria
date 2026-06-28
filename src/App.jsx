@@ -29,6 +29,7 @@ import {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [inventorySubTab, setInventorySubTab] = useState('resumen');
   const [notifications, setNotifications] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -51,7 +52,7 @@ export default function App() {
       case 'products':
         return <Products searchQuery={searchQuery} setSearchQuery={setSearchQuery} addNotification={addNotification} />;
       case 'inventory':
-        return <Inventory searchQuery={searchQuery} setSearchQuery={setSearchQuery} addNotification={addNotification} />;
+        return <Inventory searchQuery={searchQuery} setSearchQuery={setSearchQuery} addNotification={addNotification} inventorySubTab={inventorySubTab} setInventorySubTab={setInventorySubTab} />;
       case 'suppliers':
         return <SuppliersCategories addNotification={addNotification} />;
       case 'history':
@@ -145,6 +146,31 @@ export default function App() {
               <BoxIcon size={17} />
               <span>Inventario</span>
             </button>
+            {activeTab === 'inventory' && (
+              <ul style={{ listStyle: 'none', margin: '0.25rem 0 0.5rem 1.75rem', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                {['resumen', 'existencias', 'movimientos', 'kardex', 'transferencias', 'ajustes'].map((sub) => {
+                  const labels = {
+                    resumen: 'Resumen',
+                    existencias: 'Existencias por Sucursal',
+                    movimientos: 'Movimientos',
+                    kardex: 'Kardex',
+                    transferencias: 'Transferencias',
+                    ajustes: 'Ajustes de Inventario'
+                  };
+                  return (
+                    <li key={sub}>
+                      <button 
+                        className={`nav-button ${inventorySubTab === sub ? 'active' : ''}`} 
+                        onClick={() => setInventorySubTab(sub)} 
+                        style={{ padding: '0.45rem 0.8rem', fontSize: '0.75rem', opacity: inventorySubTab === sub ? 1 : 0.7 }}
+                      >
+                        <span>{labels[sub]}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </li>
           <li className="nav-item">
             <button className="nav-button" onClick={() => addNotification('Módulo de Compras en desarrollo.', 'warning')} style={{ padding: '0.65rem 0.8rem' }}>
