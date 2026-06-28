@@ -408,13 +408,16 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
 
   // Filter products by search query AND category tabs
   const filteredProducts = products.filter((p) => {
+    const pName = p.name || '';
+    const pBarcode = p.barcode || '';
     const matchesSearch = 
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.barcode && p.barcode.includes(searchQuery));
+      pName.toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      pBarcode.toLowerCase().includes((searchQuery || '').toLowerCase());
     
     const matchesCategory = 
       selectedCategory === 'Todos' || 
-      (p.categories?.name === selectedCategory);
+      (p.categories?.name === selectedCategory) ||
+      (!p.categories?.name && selectedCategory === 'Ferretería'); // Fallback if they select Ferretería
 
     return matchesSearch && matchesCategory;
   });
