@@ -127,10 +127,12 @@ export default function Dashboard({ setActiveTab }) {
       const productMap = {};
       if (saleItems) {
         saleItems.forEach(item => {
-          const name = item.products?.name || 'Producto Eliminado';
-          const stock = item.products?.stock ?? 0;
-          const image_url = item.products?.image_url || null;
-          totalSoldQty += item.quantity;
+          totalSoldQty += item.quantity; // Count all sold items for overall stats
+          if (!item.products) return; // Skip deleted products from Top Products ranking
+          
+          const name = item.products.name;
+          const stock = item.products.stock ?? 0;
+          const image_url = item.products.image_url || null;
           
           if (!productMap[name]) {
             productMap[name] = { name, sales: 0, stock, revenue: 0, image_url };
