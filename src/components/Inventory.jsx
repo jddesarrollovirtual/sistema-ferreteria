@@ -223,7 +223,7 @@ function ExistenciasView({ products, branches }) {
         <div style={{ flexGrow: 1, minWidth: '200px' }}>
           <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' }}>Sucursal</label>
           <div style={{ position: 'relative' }}>
-            <select className="form-input" style={{ width: '100%', height: '36px', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
+            <select className="form-input" style={{ width: '100%', height: '36px', padding: '0 1rem', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
               <option value="todas">Todas las sucursales</option>
               {branches.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
@@ -234,7 +234,7 @@ function ExistenciasView({ products, branches }) {
         <div style={{ flexGrow: 1, minWidth: '150px' }}>
           <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' }}>Categoría</label>
           <div style={{ position: 'relative' }}>
-            <select className="form-input" style={{ width: '100%', height: '36px', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
+            <select className="form-input" style={{ width: '100%', height: '36px', padding: '0 1rem', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
               <option value="todas">Todas las categorías</option>
             </select>
             <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '11px', color: 'var(--text-muted)' }} />
@@ -244,7 +244,7 @@ function ExistenciasView({ products, branches }) {
         <div style={{ flexGrow: 1, minWidth: '150px' }}>
           <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' }}>Estado de stock</label>
           <div style={{ position: 'relative' }}>
-            <select className="form-input" style={{ width: '100%', height: '36px', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
+            <select className="form-input" style={{ width: '100%', height: '36px', padding: '0 1rem', fontSize: '0.8rem', appearance: 'none', background: 'rgba(0,0,0,0.2)' }}>
               <option value="todos">Todos</option>
               <option value="bajo">Stock Bajo</option>
               <option value="agotado">Sin Stock</option>
@@ -456,7 +456,7 @@ function KardexView({ products, logs, branches }) {
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ flexGrow: 2 }}>
           <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' }}>Consultar Producto</label>
-          <select className="form-input" value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)} style={{ width: '100%', height: '36px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)' }}>
+          <select className="form-input" value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)} style={{ width: '100%', height: '36px', padding: '0 1rem', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)' }}>
             <option value="">Todos los productos...</option>
             {products.map(p => (
               <option key={p.id} value={p.id}>{p.name} {p.barcode ? `(${p.barcode})` : ''}</option>
@@ -466,7 +466,7 @@ function KardexView({ products, logs, branches }) {
         
         <div style={{ flexGrow: 1 }}>
           <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.3rem', display: 'block' }}>Sucursal</label>
-          <select className="form-input" value={selectedBranch} onChange={e => setSelectedBranch(e.target.value)} style={{ width: '100%', height: '36px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)' }}>
+          <select className="form-input" value={selectedBranch} onChange={e => setSelectedBranch(e.target.value)} style={{ width: '100%', height: '36px', padding: '0 1rem', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)' }}>
             <option value="">Todas las sucursales</option>
             {branches.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
