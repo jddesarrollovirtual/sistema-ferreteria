@@ -1199,14 +1199,55 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
                   Galería de Catálogo
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+                  {/* Primary product image */}
                   <img 
                     src={selectedProduct.image_url || getProductImage(selectedProduct.name)} 
                     alt="P1" 
                     style={{ width: '100%', height: '90px', borderRadius: '8px', objectFit: 'cover', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }} 
                   />
-                  <div style={{ width: '100%', height: '90px', borderRadius: '8px', background: 'rgba(255,255,255,0.01)', border: '1px dashed rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.68rem', cursor: 'pointer' }} onClick={() => addNotification('Subir foto adicional en desarrollo.', 'primary')}>
+                  
+                  {/* Additional dynamic gallery images */}
+                  {(selectedProduct.additional_images || []).map((imgUrl, idx) => (
+                    <img 
+                      key={idx}
+                      src={imgUrl} 
+                      alt={`Galeria ${idx + 1}`} 
+                      style={{ width: '100%', height: '90px', borderRadius: '8px', objectFit: 'cover', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }} 
+                    />
+                  ))}
+
+                  {/* Upload new photo button wrapper */}
+                  <label style={{ width: '100%', height: '90px', borderRadius: '8px', background: 'rgba(255,255,255,0.01)', border: '1px dashed rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.68rem', cursor: 'pointer', transition: 'all 0.2s' }}>
                     + Foto
-                  </div>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      style={{ display: 'none' }} 
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const newImages = [...(selectedProduct.additional_images || []), reader.result];
+                            const updatedProduct = { ...selectedProduct, additional_images: newImages };
+                            
+                            // Update active drawer state
+                            setSelectedProduct(updatedProduct);
+                            
+                            // Update global state and localStorage
+                            setProducts(prevProducts => {
+                              const newProducts = prevProducts.map(p => p.id === updatedProduct.id ? updatedProduct : p);
+                              localStorage.setItem('ferrepro_products', JSON.stringify(newProducts));
+                              return newProducts;
+                            });
+                            
+                            addNotification('Foto añadida a la galería exitosamente.', 'success');
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
                 </div>
               </div>
             )}
