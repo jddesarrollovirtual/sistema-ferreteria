@@ -191,7 +191,8 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
               .from('products')
               .insert([payload])
               .select();
-            if (!error && data) newId = data[0].id;
+            if (error) throw error;
+            if (data && data.length > 0) newId = data[0].id;
           }
 
           // Save ERP metadata
@@ -221,7 +222,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
         setImportModalOpen(false);
       } catch (err) {
         console.error(err);
-        addNotification('Error al importar el catálogo CSV.', 'danger');
+        addNotification(`Error al importar el catálogo CSV: ${err.message || JSON.stringify(err)}`, 'error');
       } finally {
         setLoading(false);
       }
@@ -285,6 +286,7 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
       setDbError(false);
     } catch (error) {
       console.error('Error fetching catalog, loading mock database:', error);
+      addNotification(`Error de Base de Datos: ${error.message || 'No se pudo conectar'}. Usando modo simulación.`, 'error');
       setDbError(true);
       setCategories([
         { id: 1, name: 'Herramientas' },
@@ -443,7 +445,8 @@ export default function Products({ searchQuery: propSearchQuery, setSearchQuery:
       setModalOpen(false);
       fetchInitialData();
     } catch (error) {
-      console.warn('Saving in Simulation mode:', error);
+      console.error('Saving in Simulation mode, error:', error);
+      addNotification(`Error Supabase: ${error.message || JSON.stringify(error)}`, 'error');
       const tempId = editProduct ? editProduct.id : Date.now();
 
       const erpMetadata = JSON.parse(localStorage.getItem('ferre_product_erp_metadata') || '{}');

@@ -267,6 +267,7 @@ export default function POS({ searchQuery: propSearchQuery, setSearchQuery: prop
       setDbError(false);
     } catch (error) {
       console.error('Error fetching products:', error);
+      addNotification(`Error de Base de Datos: ${error.message || 'No se pudo conectar'}`, 'error');
       setDbError(true);
       
       const localImages = JSON.parse(localStorage.getItem('ferre_product_images') || '{}');
